@@ -1,0 +1,40 @@
+{
+  "name": "h2genium",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "cross-env NEXT_SWC_USE_WASM=1 NEXT_PRIVATE_USE_TURBOPACK=0 NEXT_SHOULD_USE_TURBOPACK=0 NEXT_SHOULD_RUN_TURBOPACK=0 next dev",
+    "build": "cross-env NEXT_SWC_USE_WASM=1 NEXT_PRIVATE_USE_TURBOPACK=0 NEXT_SHOULD_USE_TURBOPACK=0 NEXT_SHOULD_RUN_TURBOPACK=0 next build",
+    "start": "cross-env NEXT_SWC_USE_WASM=1 NEXT_PRIVATE_USE_TURBOPACK=0 NEXT_SHOULD_USE_TURBOPACK=0 NEXT_SHOULD_RUN_TURBOPACK=0 next start",
+    "lint": "eslint",
+    "content:sync": "tsx scripts/crawl-h2genium.ts"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "es-abstract": "^1.24.1",
+    "framer-motion": "^11.18.1",
+    "language-subtag-registry": "^0.4.2",
+    "lightningcss": "^1.30.2",
+    "lightningcss-win32-x64-msvc": "^1.30.2",
+    "lucide-react": "^0.474.0",
+    "next": "^15.5.9",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/oxide-win32-x64-msvc": "^4.1.18",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@next/eslint-plugin-next": "^15.5.9",
+    "cheerio": "^1.0.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^9",
+    "eslint-config-next": "^15.5.9",
+    "tailwindcss": "^4",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5"
+  }
+}
