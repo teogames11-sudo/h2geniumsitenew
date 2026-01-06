@@ -33,6 +33,7 @@ export type ArticleContent = {
 export type DocumentLink = {
   url: string;
   title: string;
+  description?: string;
   type?: string;
   tags?: string[];
 };

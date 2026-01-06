@@ -10,22 +10,27 @@
     "content:sync": "tsx scripts/crawl-h2genium.ts"
   },
   "dependencies": {
+    "@react-three/drei": "^9.105.5",
+    "@react-three/fiber": "^9.5.0",
     "clsx": "^2.1.1",
     "es-abstract": "^1.24.1",
     "framer-motion": "^11.18.1",
     "language-subtag-registry": "^0.4.2",
     "lightningcss": "^1.30.2",
     "lucide-react": "^0.474.0",
+    "meshoptimizer": "^1.0.1",
     "next": "^15.5.9",
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "three": "^0.165.0"
   },
   "devDependencies": {
+    "@gltf-transform/cli": "^4.3.0",
+    "@next/eslint-plugin-next": "^15.5.9",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "@next/eslint-plugin-next": "^15.5.9",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "cheerio": "^1.0.0",
     "cross-env": "^7.0.3",
     "eslint": "^9",

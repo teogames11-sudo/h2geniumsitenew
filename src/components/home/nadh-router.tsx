@@ -1,270 +1,423 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { GlassCard, GlassBadge } from "@/components/ui/glass";
-import { Reveal } from "@/components/ui/reveal";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useReducedMotion } from "framer-motion";
 import clsx from "clsx";
+import { GlassBadge, GlassCard } from "@/components/ui/glass";
+import { Reveal } from "@/components/ui/reveal";
+import { useOrbit } from "@/hooks/useOrbit";
+import type { OrbitPosition } from "@/hooks/useOrbit";
 
-type Node = {
+const orbitItems = [
+  {
+    title: "NADH",
+    desc: "Кратко о подходе HYDROGENIUM NADH+ и роли водорода.",
+    href: "#nadh",
+  },
+  {
+    title: "Кабинеты",
+    desc: "Форматы ингаляции, капсул, бальнео и IV-решений.",
+    href: "/application",
+  },
+  {
+    title: "Сертификаты",
+    desc: "Разрешительные документы и РУ на оборудование HYDROGENIUM.",
+    href: "/documents",
+  },
+  {
+    title: "Контакты",
+    desc: "Заявка и консультация по внедрению решений.",
+    href: "#contacts",
+  },
+];
+
+type Bubble = {
   id: string;
-  label: string;
-  href: string;
-  x: number;
-  y: number;
-  pulseDelay?: number;
+  baseX: number;
+  baseY: number;
+  radius: number;
+  floatSpeed: number;
+  drift: number;
+  influence: number;
+  influenceStrength: number;
+  polarity: number;
+  opacity: number;
+  blur: number;
+};
+type NadhRouterProps = { wide?: boolean };
+
+const mulberry32 = (seed: number) => {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6d2b79f5;
+    let r = Math.imul(t ^ (t >>> 15), t | 1);
+    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
 };
 
-const nodes: Node[] = [
-  { id: "approach", label: "Подход", href: "/application", x: 420, y: 140, pulseDelay: 0.1 },
-  { id: "protocols", label: "Протоколы", href: "/application", x: 410, y: 300, pulseDelay: 0.25 },
-  { id: "integration", label: "Интеграция", href: "/catalog", x: 120, y: 170, pulseDelay: 0.35 },
-  { id: "cabinets", label: "Кабинеты", href: "/catalog", x: 140, y: 320, pulseDelay: 0.5 },
-  { id: "results", label: "Результаты", href: "/results", x: 220, y: 80, pulseDelay: 0.65 },
-];
-
-const routerSteps = [
-  { title: "Каталог", desc: "Позиции оборудования и решений.", href: "/catalog" },
-  { title: "Сертификаты", desc: "Разрешительная документация.", href: "/documents" },
-  { title: "Публикации", desc: "Материалы и ссылки.", href: "/publications" },
-  { title: "Контакты", desc: "Связаться с командой H2GENIUM.", href: "/contacts" },
-];
-
-const bubbles = [
-  { size: 12, x: 210, y: 170, delay: 0 },
-  { size: 16, x: 290, y: 140, delay: 0.18 },
-  { size: 10, x: 330, y: 210, delay: 0.32 },
-  { size: 18, x: 250, y: 260, delay: 0.48 },
-  { size: 14, x: 180, y: 230, delay: 0.64 },
-  { size: 20, x: 240, y: 110, delay: 0.8 },
-  { size: 9, x: 280, y: 300, delay: 0.96 },
-  { size: 15, x: 190, y: 320, delay: 1.12 },
-  { size: 11, x: 150, y: 190, delay: 1.28 },
-  { size: 13, x: 310, y: 260, delay: 1.44 },
-  { size: 17, x: 350, y: 180, delay: 1.6 },
-  { size: 12, x: 230, y: 200, delay: 1.76 },
-  { size: 14, x: 260, y: 330, delay: 1.92 },
-  { size: 10, x: 330, y: 120, delay: 2.08 },
-];
-
-const curveOffsets = [
-  { dx: 18, dy: -14 },
-  { dx: 12, dy: 22 },
-  { dx: -16, dy: 10 },
-  { dx: -22, dy: 28 },
-  { dx: -10, dy: -18 },
-];
-
-const lineGradientId = "energyLine";
-const pulseGradientId = "pulseLine";
-const center = { x: 260, y: 230 };
-
-const buildCurve = (target: { x: number; y: number }, offset: { dx: number; dy: number }) => {
-  const midX = (center.x + target.x) / 2 + offset.dx;
-  const midY = (center.y + target.y) / 2 + offset.dy;
-  return `M ${center.x} ${center.y} Q ${midX} ${midY} ${target.x} ${target.y}`;
-};
-
-export const NadhRouter = () => {
-  const [active, setActive] = useState<string | null>(null);
+export const NadhRouter = ({ wide = false }: NadhRouterProps) => {
   const reduceMotion = useReducedMotion();
+  const orbitRef = useRef<HTMLDivElement | null>(null);
+  const bubbleLayerRef = useRef<HTMLDivElement | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const mouseRef = useRef({ x: 0.5, y: 0.5 });
+  const bubbleElementsRef = useRef<Map<string, HTMLSpanElement>>(new Map());
+  const sizeRef = useRef({ width: 0, height: 0 });
+  const bubbleOffsetRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const rafRef = useRef<number | null>(null);
+  const touchPauseRef = useRef<number | null>(null);
+  const phases = useMemo(() => [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2], []);
+  const linkRefs = useRef<Array<HTMLAnchorElement | null>>([]);
+  const wireRefs = useRef<Array<SVGPathElement | null>>([]);
+  const positionsRef = useRef<OrbitPosition[]>(Array.from({ length: orbitItems.length }, () => ({ x: 0, y: 0 })));
+
+  const bubbles = useMemo<Bubble[]>(() => {
+    const count = isMobile ? 20 : 28;
+    const rnd = mulberry32(isMobile ? 20250106 : 20250105);
+    return Array.from({ length: count }).map((_, idx) => ({
+      id: `bubble-${idx}`,
+      baseX: rnd() * 96 + 2,
+      baseY: rnd() * 84 + 6,
+      radius: rnd() * 8 + 10,
+      floatSpeed: rnd() * 0.6 + 0.45,
+      drift: rnd() * 18 + 12,
+      influence: rnd() * 90 + 140,
+      influenceStrength: rnd() * 18 + 12,
+      polarity: rnd() > 0.5 ? 1 : -1,
+      opacity: rnd() * 0.2 + 0.28,
+      blur: rnd() * 1.5 + 0.8,
+    }));
+  }, [isMobile]);
+
+  const { center, size, paused, setPaused } = useOrbit({
+    count: orbitItems.length,
+    containerRef: orbitRef,
+    duration: 36,
+    rxFactor: 0.42,
+    ryFactor: 0.28,
+    minRx: 260,
+    maxRx: 360,
+    minRy: 170,
+    maxRy: 240,
+    phases,
+    disableAnimation: reduceMotion || isMobile,
+    onUpdate: (positions, meta) => {
+      positionsRef.current = positions;
+      positions.forEach((pos, idx) => {
+        const el = linkRefs.current[idx];
+        if (el) {
+          el.style.left = `${pos.x}px`;
+          el.style.top = `${pos.y}px`;
+          el.style.transform = "translate(-50%, -50%)";
+        }
+        const wire = wireRefs.current[idx];
+        if (wire) {
+          wire.setAttribute("d", `M ${meta.center.cx} ${meta.center.cy} L ${pos.x} ${pos.y}`);
+        }
+      });
+    },
+  });
+
+  useEffect(() => {
+    const updateMobile = () => setIsMobile(window.innerWidth < 768);
+    updateMobile();
+    window.addEventListener("resize", updateMobile);
+    return () => window.removeEventListener("resize", updateMobile);
+  }, []);
+
+  useEffect(() => {
+    sizeRef.current = size;
+  }, [size]);
+
+  useEffect(() => {
+    bubbleOffsetRef.current.clear();
+  }, [bubbles]);
+
+  useEffect(
+    () => () => {
+      if (touchPauseRef.current) clearTimeout(touchPauseRef.current);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const layer = bubbleLayerRef.current;
+    if (!layer) return;
+
+    const interval = 1000 / (reduceMotion ? 10 : 15);
+    let last = performance.now();
+
+    const runFrame = (ts: number) => {
+      if (ts - last >= interval) {
+        last = ts;
+        const time = ts / 1000;
+        const fallbackWidth = layer.clientWidth || 640;
+        const fallbackHeight = layer.clientHeight || 520;
+        const { width, height } =
+          sizeRef.current.width > 0 ? sizeRef.current : { width: fallbackWidth, height: fallbackHeight };
+        const cursor =
+          !isMobile && !reduceMotion
+            ? { x: mouseRef.current.x * width, y: mouseRef.current.y * height }
+            : { x: width / 2, y: height / 2 };
+
+        bubbles.forEach((bubble, idx) => {
+          const el = bubbleElementsRef.current.get(bubble.id);
+          if (!el) return;
+          const baseX = (bubble.baseX / 100) * width;
+          const baseY = (bubble.baseY / 100) * height;
+          const floatX = Math.sin(time * bubble.floatSpeed + idx * 0.6) * bubble.drift;
+          const floatY = Math.cos(time * bubble.floatSpeed * 0.9 + idx * 0.4) * bubble.drift * 0.6;
+          const dx = cursor.x - baseX;
+          const dy = cursor.y - baseY;
+          const dist = Math.max(1, Math.hypot(dx, dy));
+          const influence = Math.max(0, 1 - dist / bubble.influence);
+          const targetOffset = {
+            x: (dx / dist) * influence * bubble.influenceStrength * bubble.polarity,
+            y: (dy / dist) * influence * bubble.influenceStrength * bubble.polarity,
+          };
+          const prev = bubbleOffsetRef.current.get(bubble.id) ?? { x: 0, y: 0 };
+          const lerp = reduceMotion || isMobile ? 0.1 : 0.18;
+          const next = {
+            x: prev.x + (targetOffset.x - prev.x) * lerp,
+            y: prev.y + (targetOffset.y - prev.y) * lerp,
+          };
+          bubbleOffsetRef.current.set(bubble.id, next);
+          el.style.transform = `translate(${baseX + floatX + next.x}px, ${baseY + floatY + next.y}px) translate(-50%, -50%)`;
+        });
+      }
+      rafRef.current = requestAnimationFrame(runFrame);
+    };
+
+    runFrame(performance.now());
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [bubbles, isMobile, reduceMotion]);
+
+  const handlePause = (value: boolean) => {
+    if (reduceMotion || isMobile) return;
+    if (!value && touchPauseRef.current) {
+      clearTimeout(touchPauseRef.current);
+      touchPauseRef.current = null;
+    }
+    setPaused(value);
+  };
+
+  const pauseForTouch = () => {
+    if (reduceMotion || isMobile) return;
+    handlePause(true);
+    if (touchPauseRef.current) clearTimeout(touchPauseRef.current);
+    touchPauseRef.current = window.setTimeout(() => handlePause(false), 2200);
+  };
+
+  const handleMouseMove = (event: MouseEvent<HTMLDivElement>) => {
+    if (!orbitRef.current) return;
+    const rect = orbitRef.current.getBoundingClientRect();
+    const nx = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    const ny = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
+    mouseRef.current = { x: nx, y: ny };
+  };
+
+  const resetMouse = () => {
+    mouseRef.current = { x: 0.5, y: 0.5 };
+  };
+
+  const sectionClasses = clsx(
+    "relative mt-12 space-y-8 overflow-visible rounded-[28px] border border-white/35 bg-[color:var(--glass-bg)]/85 shadow-[var(--shadow-2),0_28px_84px_-32px_rgba(18,110,235,0.42)] backdrop-blur-2xl",
+    wide ? "mx-[-18px] sm:mx-[-32px] lg:mx-[-56px] px-6 sm:px-10 lg:px-14 py-8 sm:py-10" : "p-6 sm:p-10",
+  );
 
   return (
-    <section className="mt-12 space-y-8 rounded-[28px] border border-white/40 bg-[color:var(--glass-bg)]/80 p-6 shadow-[var(--shadow-2)] backdrop-blur-2xl sm:p-10">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-3">
-          <GlassBadge tone="mint">NADH · Навигация</GlassBadge>
-          <h2 className="text-2xl font-semibold text-[color:var(--text)] sm:text-3xl">Сценарии и переходы</h2>
-          <p className="max-w-2xl text-[color:var(--muted)]">
-            Ядро NADH соединяет ключевые разделы: подход, протоколы, кабинеты, интеграция и результаты. Кликайте узлы для
-            перехода к нужным страницам.
-          </p>
+    <section id="nadh" className={sectionClasses}>
+      <div className="pointer-events-none absolute inset-[-28px] -z-10 rounded-[42px] bg-[radial-gradient(circle_at_40%_28%,rgba(47,183,255,0.2),transparent_55%),radial-gradient(circle_at_72%_72%,rgba(65,224,196,0.16),transparent_55%)] blur-[76px] opacity-80 animate-[softGlow_5.4s_ease-in-out_infinite]" />
+      <div className="pointer-events-none absolute inset-0 -z-10 rounded-[32px] bg-gradient-to-b from-white/40 via-transparent to-white/10" />
+
+      <Reveal className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <GlassBadge tone="mint">NADH</GlassBadge>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-[color:var(--accent-mint)] shadow-[0_0_0_6px_rgba(65,224,196,0.25)]" />
-          <span className="text-sm font-semibold text-[color:var(--muted)]">Мягкая 3D-анимация</span>
-        </div>
-      </div>
 
-      <Reveal className="grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-center">
-        <div className="relative h-[500px]">
-          <motion.div
-            className="absolute inset-0 rounded-full bg-gradient-to-br from-[color:var(--accent-blue)]/18 via-white/10 to-[color:var(--accent-mint)]/20 blur-3xl"
-            initial={{ scale: 0.85, opacity: 0 }}
-            animate={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 1, opacity: 1 }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
-          />
+        <GlassCard className="relative overflow-hidden border-white/30 bg-white/80 p-4 sm:p-6">
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_24%_24%,rgba(47,183,255,0.14),transparent_36%),radial-gradient(circle_at_82%_60%,rgba(65,224,196,0.12),transparent_32%)] blur-[38px]" />
 
-          {/* Bubbles layer */}
-          {!reduceMotion &&
-            bubbles.map((b, idx) => (
-              <motion.span
-                key={idx}
-                className="absolute rounded-full bg-white/35 blur-lg"
-                style={{ width: b.size, height: b.size, left: b.x, top: b.y }}
-                animate={{
-                  x: [b.x, b.x + (idx % 2 === 0 ? 22 : -22), b.x],
-                  y: [b.y, b.y + (idx % 3 === 0 ? -28 : 20), b.y],
-                  opacity: [0.2, 0.55, 0.2],
-                }}
-                transition={{ duration: 7 + idx * 0.12, repeat: Infinity, delay: b.delay, ease: "easeInOut" }}
-              />
-            ))}
-          {reduceMotion &&
-            bubbles.map((b, idx) => (
-              <span
-                key={idx}
-                className="absolute rounded-full bg-white/30 blur-lg"
-                style={{ width: b.size, height: b.size, left: b.x, top: b.y, opacity: 0.4 }}
-              />
-            ))}
+          <div ref={bubbleLayerRef} className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+            {(() => {
+              const width = size.width || 640;
+              const height = size.height || 520;
 
-          <svg viewBox="0 0 520 520" className="absolute inset-0 h-full w-full">
-            <defs>
-              <linearGradient id={lineGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#2FB7FF" stopOpacity="0.45" />
-                <stop offset="100%" stopColor="#41E0C4" stopOpacity="0.45" />
-              </linearGradient>
-              <linearGradient id={pulseGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#2FB7FF" stopOpacity="0.95" />
-                <stop offset="100%" stopColor="#41E0C4" stopOpacity="0.95" />
-              </linearGradient>
-            </defs>
-
-            {nodes.map((node, index) => {
-              const offsets = curveOffsets[index % curveOffsets.length];
-              const d = buildCurve({ x: node.x, y: node.y }, offsets);
-              const highlight = active === node.id;
-              const pulseTransition = {
-                duration: 1.5 + index * 0.08,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: node.pulseDelay || 0,
-              };
-
-              return (
-                <g key={`line-${node.id}`}>
-                  <path
-                    d={d}
-                    stroke={`url(#${lineGradientId})`}
-                    strokeWidth={highlight ? 3 : 2}
-                    strokeLinecap="round"
-                    fill="none"
-                    style={{ filter: "drop-shadow(0 0 8px rgba(65,224,196,0.35))" }}
+              return bubbles.map((bubble) => {
+                const baseX = (bubble.baseX / 100) * width;
+                const baseY = (bubble.baseY / 100) * height;
+                return (
+                  <span
+                    key={bubble.id}
+                    data-bubble-id={bubble.id}
+                    ref={(node) => {
+                      const map = bubbleElementsRef.current;
+                      if (!node) {
+                        map.delete(bubble.id);
+                      } else {
+                        map.set(bubble.id, node);
+                      }
+                    }}
+                    className="pointer-events-none absolute rounded-full bg-white"
+                    style={{
+                      width: bubble.radius * 2,
+                      height: bubble.radius * 2,
+                      left: baseX,
+                      top: baseY,
+                      opacity: bubble.opacity,
+                      filter: `blur(${bubble.blur}px) drop-shadow(0 0 12px rgba(255,255,255,0.22))`,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                    aria-hidden
                   />
-                  {!reduceMotion && (
-                    <motion.path
-                      d={d}
-                      stroke={`url(#${pulseGradientId})`}
-                      strokeWidth={highlight ? 3 : 2}
-                      strokeLinecap="round"
-                      fill="none"
-                      strokeDasharray="6 16"
-                      animate={{ strokeDashoffset: [0, -80] }}
-                      transition={pulseTransition}
-                    />
-                  )}
-                  {reduceMotion && (
-                    <path
-                      d={d}
-                      stroke={`url(#${pulseGradientId})`}
-                      strokeWidth={highlight ? 3 : 2}
-                      strokeLinecap="round"
-                      fill="none"
-                      strokeDasharray="6 16"
-                      strokeDashoffset={0}
-                      opacity={0.6}
-                    />
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-
-          <div className="absolute left-1/2 top-1/2 flex h-[140px] w-[140px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 shadow-[var(--shadow-2)]">
-            {!reduceMotion && (
-              <>
-                <motion.div
-                  className="pointer-events-none absolute inset-[-24%] rounded-full bg-[color:var(--accent-blue)]/40 blur-3xl"
-                  animate={{ scale: [1, 1.08, 1], opacity: [0.65, 1, 0.65] }}
-                  transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <motion.div
-                  className="pointer-events-none absolute inset-[-14%] rounded-full bg-[color:var(--accent-blue)]/30 blur-2xl"
-                  animate={{ scale: [1, 1.05, 1], opacity: [0.7, 1, 0.7] }}
-                  transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
-                />
-                <motion.div
-                  className="pointer-events-none absolute inset-[-36%] rounded-full blur-[50px]"
-                  style={{
-                    background:
-                      "repeating-linear-gradient(90deg, rgba(47,183,255,0.25) 0 1px, transparent 1px 16px), repeating-linear-gradient(0deg, rgba(47,183,255,0.25) 0 1px, transparent 1px 16px)",
-                  }}
-                  animate={{ opacity: [0.25, 0.55, 0.25] }}
-                  transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-                />
-              </>
-            )}
-            {reduceMotion && (
-              <div
-                className="pointer-events-none absolute inset-[-24%] rounded-full bg-[color:var(--accent-blue)]/25 blur-3xl"
-                aria-hidden
-              />
-            )}
-            <div className="absolute inset-0 rounded-full border border-white/50" />
-            <span className="relative z-10 text-lg font-semibold text-[color:var(--text)]">NADH</span>
+                );
+              });
+            })()}
           </div>
 
-          {nodes.map((node, index) => (
-            <Link
-              key={node.id}
-              href={node.href}
-              className="absolute"
-              style={{ left: node.x, top: node.y, transform: "translate(-50%, -50%)" }}
-            >
-              <motion.div
-                className={clsx(
-                  "glass-surface rounded-full px-4 py-2 text-sm font-semibold text-[color:var(--text)]",
-                  active === node.id ? "shadow-[0_18px_50px_-18px_rgba(18,110,235,0.45)]" : "",
-                )}
-                initial={{ opacity: 0, y: 12, scale: 0.94 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: 0.12 * index, type: "spring", stiffness: 200, damping: 26 }}
-                whileHover={{ scale: 1.03 }}
-                onMouseEnter={() => setActive(node.id)}
-                onMouseLeave={() => setActive(null)}
-              >
-                {node.label}
-              </motion.div>
-            </Link>
-          ))}
-          <p className="absolute -bottom-7 left-4 text-xs text-[color:var(--muted)]">(Motion 3d навигация)</p>
-        </div>
+          <div
+            ref={orbitRef}
+            className="relative z-10 min-h-[520px] overflow-visible rounded-[22px] border border-white/35 bg-gradient-to-br from-white/70 via-white/40 to-[color:var(--accent-blue)]/6"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={resetMouse}
+          >
+            <div className="pointer-events-none absolute inset-0">
+              {/* bubble layer is above */}
+            </div>
 
-        <div className="grid gap-3">
-          {routerSteps.map((step, idx) => (
-            <Link key={step.title} href={step.href}>
-              <GlassCard className="flex flex-col gap-1 p-4 transition-all hover:translate-y-[-2px]">
-                <div className="flex items-center gap-3">
-                  <span className={clsx("h-8 w-8 rounded-full", "bg-[color:var(--accent-blue)]/10")} />
-                  <div>
-                    <div className="text-base font-semibold text-[color:var(--text)]">{step.title}</div>
-                    <p className="text-sm text-[color:var(--muted)]">{step.desc}</p>
+            {!isMobile && size.width > 0 && size.height > 0 && (
+              <svg
+                className="pointer-events-none absolute inset-0 h-full w-full"
+                viewBox={`0 0 ${size.width} ${size.height}`}
+                aria-hidden
+              >
+                <defs>
+                  <linearGradient id="nadhWire" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#2FB7FF" stopOpacity="0.9" />
+                    <stop offset="100%" stopColor="#41E0C4" stopOpacity="0.75" />
+                  </linearGradient>
+                </defs>
+                {orbitItems.map((_, idx) => {
+                  const pos = positionsRef.current[idx] ?? { x: center.cx, y: center.cy };
+                  const d = `M ${center.cx} ${center.cy} L ${pos.x} ${pos.y}`;
+                  return (
+                    <path
+                      key={`wire-${idx}`}
+                      ref={(node) => {
+                        wireRefs.current[idx] = node;
+                      }}
+                      d={d}
+                      stroke="url(#nadhWire)"
+                      strokeWidth={2.2}
+                      strokeLinecap="round"
+                      fill="none"
+                      style={{
+                        animation: "energyDash 7s linear infinite",
+                        animationPlayState: paused ? "paused" : "running",
+                        filter: "drop-shadow(0 0 10px rgba(47,183,255,0.24))",
+                        willChange: "transform, opacity",
+                      }}
+                      opacity={0.9}
+                    />
+                  );
+                })}
+              </svg>
+            )}
+
+            <div className="pointer-events-none absolute left-1/2 top-1/2 h-[210px] w-[210px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/35 bg-white/60 shadow-[0_18px_44px_-18px_rgba(0,0,0,0.28)] backdrop-blur-2xl">
+              {!reduceMotion && (
+                <>
+                  <span className="absolute inset-[-18%] rounded-full bg-[radial-gradient(circle_at_50%_50%,rgba(18,110,235,0.22),transparent_65%)] blur-[52px]" />
+                  <span className="absolute inset-[-32%] rounded-full border border-white/25" />
+                </>
+              )}
+              <div className="absolute inset-6 rounded-full border border-white/45 bg-white/70 shadow-[0_12px_32px_-18px_rgba(0,0,0,0.28)]" />
+              <div className="absolute inset-0 grid place-items-center text-center">
+                <div className="space-y-1">
+                  <div className="text-xs uppercase tracking-[0.22em] text-[color:var(--muted)]">молекула</div>
+                  <div className="text-3xl font-semibold text-[color:var(--text)] drop-shadow-[0_10px_26px_rgba(18,110,235,0.35)]">
+                    NADH
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-[11px] text-[color:var(--muted)]">
+                    <span className="h-[6px] w-[6px] rounded-full bg-[color:var(--accent-blue)]/60 shadow-[0_0_0_8px_rgba(18,110,235,0.12)]" />
+                    <span>коэнзим клеточного дыхания</span>
                   </div>
                 </div>
-                <motion.div
-                  className="h-1 rounded-full bg-gradient-to-r from-[color:var(--accent-blue)] via-[color:var(--accent-cyan)] to-[color:var(--accent-mint)]"
-                  initial={{ scaleX: 0, transformOrigin: "left" }}
-                  whileInView={{ scaleX: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: 0.05 * idx }}
-                />
-              </GlassCard>
-            </Link>
-          ))}
-        </div>
+              </div>
+            </div>
+
+            {!isMobile &&
+              orbitItems.map((item, idx) => {
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    ref={(node) => {
+                      linkRefs.current[idx] = node;
+                    }}
+                    className="absolute pointer-events-auto"
+                    style={{
+                      left: center.cx,
+                      top: center.cy,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                    onMouseEnter={() => handlePause(true)}
+                    onMouseLeave={() => handlePause(false)}
+                    onFocus={() => handlePause(true)}
+                    onBlur={() => handlePause(false)}
+                    onTouchStart={pauseForTouch}
+                    aria-label={item.title}
+                  >
+                    <GlassCard className="w-[240px] max-w-[260px] rounded-full border-white/45 bg-white/95 px-5 py-3 text-left shadow-[0_22px_52px_-22px_rgba(18,110,235,0.45)] transition hover:-translate-y-[1px]">
+                      <div className="text-sm font-semibold text-[color:var(--text)]">{item.title}</div>
+                      <p className="text-[11px] leading-snug text-[color:var(--muted)]">{item.desc}</p>
+                    </GlassCard>
+                  </Link>
+                );
+              })}
+          </div>
+        </GlassCard>
+
+        {isMobile && (
+          <div className="grid gap-3">
+            {orbitItems.map((item) => (
+              <Link key={item.href} href={item.href} aria-label={item.title}>
+                <GlassCard className="rounded-2xl border-white/40 bg-white/90 p-4 shadow-[var(--shadow-1)]">
+                  <div className="text-base font-semibold text-[color:var(--text)]">{item.title}</div>
+                  <p className="text-sm leading-snug text-[color:var(--muted)]">{item.desc}</p>
+                </GlassCard>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <GlassCard className="space-y-3 border-white/35 bg-white/85 p-5 shadow-[var(--shadow-1)]">
+          <div id="formats" className="sr-only" aria-hidden="true" />
+          <h3 className="text-xl font-semibold text-[color:var(--text)]">NADH: что это и почему это важно</h3>
+          <p className="text-[color:var(--muted)]">
+            NADH (никотинамид-аденин-динуклеотид, восстановленная форма) — ключевой кофермент энергетического обмена. Он
+            переносит электроны в митохондриях и участвует в процессах, которые приводят к синтезу АТФ — универсального
+            “топлива” клетки. Баланс NAD+/NADH связан с тем, как организм управляет окислительно-восстановительными
+            реакциями, устойчивостью к нагрузке и скоростью восстановления.
+          </p>
+          <p className="text-[color:var(--muted)]">
+            В наших протоколах мы опираемся на понимание роли NAD+/NADH как на основу для корректной логики восстановления:
+            сочетание водородных форматов, мониторинга состояния и регламентов проведения процедур. Такой подход помогает
+            выстраивать последовательность шагов, фиксировать динамику “до/после” и поддерживать воспроизводимость
+            результатов в клинических и оздоровительных сценариях.
+          </p>
+          <p className="text-xs text-[color:var(--muted)]">
+            Информация представлена в ознакомительных целях и не заменяет консультацию врача. Форматы и протоколы
+            подбираются специалистом индивидуально.
+          </p>
+        </GlassCard>
       </Reveal>
     </section>
   );
 };
+

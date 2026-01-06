@@ -98,15 +98,217 @@ a {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+
+  .orbit,
+  .orbit-spin,
+  .energy-ring,
+  .orbit-item-inner,
+  .orbit-lines path,
+  .spark,
+  .nadh-glow {
+    animation: none !important;
+  }
 }
 
 html {
-  zoom: 0.75;
+  zoom: 0.82;
 }
 
 @media (max-width: 768px) {
   html {
     zoom: 1;
+  }
+}
+
+@keyframes orbitSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orbitCounterSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.orbit {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  --orbit-duration: 28s;
+  animation: orbitSpin var(--orbit-duration) linear infinite;
+}
+
+.orbit-item {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: rotate(var(--a)) translateX(var(--r)) rotate(calc(-1 * var(--a)));
+  transform-origin: 0 0;
+  pointer-events: auto;
+  backface-visibility: hidden;
+}
+
+.orbit-item-inner {
+  animation: orbitCounterSpin var(--orbit-duration) linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.orbit-spin {
+  position: absolute;
+  inset: 0;
+  animation: orbitSpin var(--orbit-duration) linear infinite;
+}
+
+.orbit-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 26px rgba(18, 110, 235, 0.25));
+}
+
+@keyframes energyDash {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -180;
+  }
+}
+
+.energy-ring {
+  position: absolute;
+  inset: 6%;
+  border-radius: 28px;
+  pointer-events: none;
+  box-shadow: 0 0 0 8px rgba(18, 110, 235, 0.18), 0 0 60px rgba(18, 110, 235, 0.32);
+  animation: pulseRing 3.4s ease-in-out infinite;
+}
+
+.edge-blur-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 58%, black 82%);
+          mask-image: radial-gradient(circle at 50% 50%, transparent 58%, black 82%);
+  backdrop-filter: blur(18px);
+}
+
+@keyframes pulseRing {
+  0% {
+    transform: scale(0.98);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(0.98);
+    opacity: 0.55;
+  }
+}
+
+@keyframes sparkBlink {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.9);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translate3d(6px, -6px, 0) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-4px, 4px, 0) scale(0.92);
+  }
+}
+
+@keyframes nodeFloat {
+  0% {
+    transform: translate3d(var(--fx, 0px), var(--fy, 0px), 0) scale(0.98);
+  }
+  50% {
+    transform: translate3d(calc(var(--fx, 0px) * -1), calc(var(--fy, 0px) * -1), 0) scale(1.02);
+  }
+  100% {
+    transform: translate3d(var(--fx, 0px), var(--fy, 0px), 0) scale(0.98);
+  }
+}
+
+@keyframes bubbleFloat {
+  0% {
+    opacity: 0;
+    transform: translate3d(calc(var(--mx, 0px) + var(--drift, 0px)), calc(var(--my, 0px) + 12%), 0)
+      scale(0.85);
+  }
+  20% {
+    opacity: 0.4;
+  }
+  55% {
+    opacity: 0.7;
+    transform: translate3d(
+        calc(var(--mx, 0px) + var(--drift, 0px) * 0.6),
+        calc(var(--my, 0px) - 32%),
+        0
+      )
+      scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(var(--mx, 0px) + var(--drift, 0px) * -1), calc(var(--my, 0px) - 88%), 0)
+      scale(0.92);
+  }
+}
+
+.bg-bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  mix-blend-mode: screen;
+  transform: translate3d(-50%, -50%, 0);
+  animation-name: bgBubbleFloat;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  backface-visibility: hidden;
+}
+
+@keyframes bgBubbleFloat {
+  0% {
+    transform: translate3d(
+        calc(var(--base-x) + var(--parallax-x)),
+        calc(var(--base-y) + var(--parallax-y) + var(--drift-y) * 0.42),
+        0
+      )
+      translate3d(-50%, -50%, 0)
+      scale(0.96);
+  }
+  50% {
+    transform: translate3d(
+        calc(var(--base-x) + var(--parallax-x) + var(--drift-x) * 0.48),
+        calc(var(--base-y) + var(--parallax-y) - var(--drift-y) * 0.62),
+        0
+      )
+      translate3d(-50%, -50%, 0)
+      scale(1.08);
+  }
+  100% {
+    transform: translate3d(
+        calc(var(--base-x) + var(--parallax-x) - var(--drift-x)),
+        calc(var(--base-y) + var(--parallax-y) - var(--drift-y) * 1.1),
+        0
+      )
+      translate3d(-50%, -50%, 0)
+      scale(0.94);
   }
 }
 
@@ -150,5 +352,53 @@ html {
   100% {
     opacity: 0.1;
     transform: translateY(-8%) scaleY(0.92);
+  }
+}
+
+@keyframes softGlow {
+  0% {
+    opacity: 0.4;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0.4;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes orbitRingPulse {
+  0% {
+    opacity: 0.15;
+    transform: scale(1);
+  }
+  45% {
+    opacity: 0.35;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+}
+
+@keyframes heroOrbitSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes heroOrbitCounterSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
   }
 }

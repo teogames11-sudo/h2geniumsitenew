@@ -8,25 +8,7 @@ export default function AboutPage() {
       <Reveal className="space-y-2">
         <GlassBadge tone="accent">О компании</GlassBadge>
         <h1 className="text-3xl font-semibold text-[color:var(--text)]">H2GENIUM</h1>
-        <p className="text-[color:var(--muted)]">
-          Наша компания специализируется на продаже оборудования для водородной терапии.
-        </p>
-      </Reveal>
-
-      <Reveal className="grid gap-4">
-        <GlassCard className="space-y-3 p-6 md:p-8">
-          <h3 className="text-2xl font-semibold text-[color:var(--text)]">Специализация</h3>
-          <p className="text-base leading-relaxed text-[color:var(--muted)]">
-            Наша компания специализируется на продаже оборудования для водородной терапии.
-          </p>
-        </GlassCard>
-
-        <GlassCard className="space-y-3 p-6 md:p-8">
-          <h3 className="text-2xl font-semibold text-[color:var(--text)]">Оборудование</h3>
-          <p className="text-base leading-relaxed text-[color:var(--muted)]">
-            Мы предлагаем широкий ассортимент оборудования, включая водородные ингаляторы, водородные генераторы для доставки молекулярного водорода в организм и другие продукты для поддержания здоровья и укрепления иммунитета.
-          </p>
-        </GlassCard>
+        <p className="text-[color:var(--muted)]">Интегратор решений на базе молекулярного водорода для кабинетов, клиник и wellness-проектов.</p>
       </Reveal>
 
       <NadhRouter />

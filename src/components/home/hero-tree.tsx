@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -9,15 +9,15 @@ const devices = [
   {
     id: "catalog",
     title: "Каталог",
-    note: "Водородные решения",
+    note: "Оборудование и решения",
     href: "/catalog",
     top: "10%",
     left: "64%",
   },
   {
     id: "documents",
-    title: "Сертификат (РУ)",
-    note: "Документы и безопасность",
+    title: "Сертификаты",
+    note: "Разрешительные материалы и РУ",
     href: "/documents",
     top: "65%",
     left: "68%",
@@ -25,7 +25,7 @@ const devices = [
   {
     id: "results",
     title: "Результаты",
-    note: "Практические кейсы",
+    note: "Кейсы и показатели",
     href: "/results",
     top: "14%",
     left: "12%",
@@ -33,7 +33,7 @@ const devices = [
   {
     id: "contacts",
     title: "Контакты",
-    note: "Сопровождение и сервис",
+    note: "Заявка и консультация",
     href: "/contacts",
     top: "68%",
     left: "20%",
@@ -139,3 +139,4 @@ export const HeroTree = () => {
     </div>
   );
 };
+
