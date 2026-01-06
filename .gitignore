@@ -47,3 +47,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# --- allow production assets (override ignores) ---
+!public/models/
+!public/models/**
+
+# allow 3D files inside public/models even if *.glb/*.gltf/*.bin are ignored globally
+!public/models/**/*.glb
+!public/models/**/*.gltf
+!public/models/**/*.bin
+
+# allow certificate image if it is used by the site
+!public/sertificate.png
