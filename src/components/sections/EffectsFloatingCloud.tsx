@@ -258,7 +258,7 @@ export const EffectsFloatingCloud = ({ items }: { items: EffectItem[] }) => {
           ref={(node) => {
             cardRefs.current[idx] = node;
           }}
-          className="pointer-events-none absolute select-none rounded-[20px] border border-white/18 bg-white/5 p-4 text-left shadow-[0_0_28px_rgba(59,130,246,0.18)] backdrop-blur-lg will-change-transform"
+          className="pointer-events-none absolute select-none rounded-[20px] border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/35 p-4 text-left shadow-[0_0_28px_rgba(59,130,246,0.18)] backdrop-blur-lg will-change-transform"
           style={{
             width: card.width,
           }}

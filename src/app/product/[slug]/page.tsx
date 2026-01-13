@@ -31,12 +31,12 @@ export default function ProductPage({ params }: PageProps<{ slug: string }>) {
             {(product.images || []).map((src: string) => (
               <div
                 key={src}
-                className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-white/50 to-[color:var(--accent-blue)]/20"
+                className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-[rgba(12,24,44,0.6)] to-[color:var(--accent-blue)]/20"
                 style={{ backgroundImage: `url(${src})`, backgroundSize: "cover", backgroundPosition: "center" }}
               />
             ))}
             {(product.images || []).length === 0 && (
-              <div className="rounded-2xl border border-dashed border-white/50 p-6 text-sm text-[color:var(--muted)]">
+              <div className="rounded-2xl border border-dashed border-[color:var(--glass-stroke)] p-6 text-sm text-[color:var(--muted)]">
                 Изображения появятся после синхронизации контента.
               </div>
             )}

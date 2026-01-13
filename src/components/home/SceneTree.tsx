@@ -1,11 +1,21 @@
 "use client";
 
-import { Suspense, memo, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, useGLTF, useProgress } from "@react-three/drei";
-import { ACESFilmicToneMapping, Box3, Group, Material, MathUtils, Mesh, SRGBColorSpace, Vector3 } from "three";
+import {
+  ACESFilmicToneMapping,
+  Box3,
+  Group,
+  Material,
+  MathUtils,
+  Mesh,
+  MeshStandardMaterial,
+  SRGBColorSpace,
+  Vector3,
+} from "three";
 
-const MODEL_PATH = "/models/Meshy_AI_Hydrogen_Harmony_0105125131_texture.glb";
+const MODEL_PATH = "/models/Meshy_AI_derevo_0113133108_texture.glb";
 
 type SceneTreeProps = {
   className?: string;
@@ -54,16 +64,20 @@ const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min)
 
 const TreeModel = ({ onReady }: { onReady?: () => void }) => {
   const groupRef = useRef<Group>(null);
+  const orbitRef = useRef<Mesh>(null);
+  const orbitRingRef = useRef<Mesh>(null);
+  const orbitMaterialRef = useRef<MeshStandardMaterial>(null);
   const { camera } = useThree();
   const { scene } = useGLTF(MODEL_PATH);
   const fadeTargets = useMemo(() => prepareFadeTargets(scene), [scene]);
-  const targetRotYRef = useRef(0);
   const fadeTargetsRef = useRef<FadeTarget[]>([]);
   const introStartedRef = useRef(false);
   const introStartRef = useRef<number | null>(null);
   const introDoneRef = useRef(false);
+  const pointerTargetRef = useRef({ x: 0, y: 0 });
+  const pointerCurrentRef = useRef({ x: 0, y: 0 });
   const finalScaleRef = useRef(1);
-  const baseGroupPos = useRef({ x: 0.18, y: -0.5, z: 0 });
+  const baseGroupPos = useRef({ x: 0.18, y: -0.58, z: 0 });
   const cameraTargetRef = useRef({ distance: 0, y: 0.18 });
   const cameraStartRef = useRef({ distance: 0, y: 0.12 });
   const cameraLerpRef = useRef(0);
@@ -90,7 +104,16 @@ const TreeModel = ({ onReady }: { onReady?: () => void }) => {
     return { scale, radius, distance };
   }, [bounds.maxDim, bounds.size.y]);
 
-  useEffect(() => {
+  const orbitSettings = useMemo(() => {
+    const base = bounds.maxDim || 1;
+    return {
+      radius: base * 0.6,
+      height: base * 0.18,
+      tube: Math.max(base * 0.007, 0.003),
+    };
+  }, [bounds.maxDim]);
+
+  useLayoutEffect(() => {
     const sceneData = scene.userData as { __centered?: boolean };
     if (!sceneData.__centered) {
       scene.position.sub(bounds.center);
@@ -123,26 +146,53 @@ const TreeModel = ({ onReady }: { onReady?: () => void }) => {
   }, [fadeTargets]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const p = clamp(window.scrollY / 900, 0, 1);
-      const target = p * Math.PI * 0.8 - Math.PI * 0.4;
-      targetRotYRef.current = target;
+    const handleMove = (event: MouseEvent) => {
+      const width = window.innerWidth || 1;
+      const height = window.innerHeight || 1;
+      const x = (event.clientX / width) * 2 - 1;
+      const y = (event.clientY / height) * 2 - 1;
+      pointerTargetRef.current = { x, y };
     };
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleScroll);
+    const handleLeave = () => {
+      pointerTargetRef.current = { x: 0, y: 0 };
+    };
+    window.addEventListener("mousemove", handleMove, { passive: true });
+    window.addEventListener("mouseleave", handleLeave);
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseleave", handleLeave);
     };
   }, []);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const group = groupRef.current;
     if (!group) return;
-    const lerpFactor = 1 - Math.pow(0.1, delta * 60);
-    group.rotation.y = group.rotation.y + (targetRotYRef.current - group.rotation.y) * lerpFactor;
+    const pointerTarget = pointerTargetRef.current;
+    const pointerCurrent = pointerCurrentRef.current;
+    const smooth = 1 - Math.pow(0.08, delta * 60);
+    pointerCurrent.x += (pointerTarget.x - pointerCurrent.x) * smooth;
+    pointerCurrent.y += (pointerTarget.y - pointerCurrent.y) * smooth;
 
+    let lift = 0;
+    const orbit = orbitRef.current;
+    const orbitRing = orbitRingRef.current;
+    if (orbit || orbitRing) {
+      const t = state.clock.getElapsedTime() * 0.6;
+      const orbitRadius = orbitSettings.radius;
+      const orbitHeight = orbitSettings.height;
+      const bob = Math.sin(t * 1.6) * orbitSettings.height * 0.35;
+      if (orbit) {
+        orbit.position.set(Math.cos(t) * orbitRadius, orbitHeight + bob, Math.sin(t) * orbitRadius);
+        const pulse = 0.92 + Math.sin(t * 2.6) * 0.08;
+        orbit.scale.setScalar(pulse);
+        if (orbitMaterialRef.current) {
+          orbitMaterialRef.current.emissiveIntensity = 0.55 + Math.sin(t * 2.6) * 0.25;
+        }
+      }
+      if (orbitRing) {
+        orbitRing.position.set(0, orbitHeight, 0);
+      }
+    }
     if (introStartedRef.current && !introDoneRef.current && introStartRef.current) {
       const elapsed = Math.max(0, performance.now() - introStartRef.current);
       const duration = 1250;
@@ -155,9 +205,8 @@ const TreeModel = ({ onReady }: { onReady?: () => void }) => {
       });
 
       const scale = finalScaleRef.current * (0.96 + 0.04 * easedQuint);
-      const lift = 0.048 * (1 - easedQuint);
+      lift = 0.048 * (1 - easedQuint);
       group.scale.setScalar(scale);
-      group.position.set(baseGroupPos.current.x, baseGroupPos.current.y + lift, baseGroupPos.current.z);
 
       if (!readyAnnouncedRef.current && eased > 0.12) {
         readyAnnouncedRef.current = true;
@@ -168,6 +217,18 @@ const TreeModel = ({ onReady }: { onReady?: () => void }) => {
         introDoneRef.current = true;
       }
     }
+
+    const rotX = pointerCurrent.y * 0.06;
+    const rotY = pointerCurrent.x * 0.08;
+    const offsetX = pointerCurrent.x * 0.06;
+    const offsetY = pointerCurrent.y * 0.04;
+    group.rotation.x = rotX;
+    group.rotation.y = rotY;
+    group.position.set(
+      baseGroupPos.current.x + offsetX,
+      baseGroupPos.current.y + lift + offsetY,
+      baseGroupPos.current.z,
+    );
 
     if (cameraLerpRef.current < 1) {
       cameraLerpRef.current = Math.min(1, cameraLerpRef.current + delta / 0.45);
@@ -181,6 +242,22 @@ const TreeModel = ({ onReady }: { onReady?: () => void }) => {
 
   return (
     <group ref={groupRef} position={[0, -0.08, 0]}>
+      <mesh ref={orbitRingRef} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[orbitSettings.radius, orbitSettings.tube, 18, 180]} />
+        <meshStandardMaterial
+          color="#9fdcff"
+          emissive="#63c6ff"
+          emissiveIntensity={0.65}
+          transparent
+          opacity={0.6}
+          depthWrite={false}
+          depthTest={false}
+        />
+      </mesh>
+      <mesh ref={orbitRef}>
+        <sphereGeometry args={[0.04, 18, 18]} />
+        <meshStandardMaterial ref={orbitMaterialRef} color="#d9f7ff" emissive="#4cc1ff" emissiveIntensity={0.7} />
+      </mesh>
       <primitive object={scene} />
     </group>
   );
@@ -221,7 +298,7 @@ const SceneTreeComponent = ({ className, onReady }: SceneTreeProps) => {
         <Suspense
           fallback={
             <Html center>
-              <div className="rounded-full bg-white/85 px-4 py-2 text-xs font-semibold text-[color:var(--text)] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.18)]">
+              <div className="rounded-full border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/85 px-4 py-2 text-xs font-semibold text-[color:var(--text)] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.28)] backdrop-blur-2xl">
                 Loading 3D:
               </div>
             </Html>
@@ -232,7 +309,7 @@ const SceneTreeComponent = ({ className, onReady }: SceneTreeProps) => {
       </Canvas>
       {progress < 100 && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="rounded-full bg-white/85 px-4 py-2 text-xs font-semibold text-[color:var(--text)] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.18)]">
+          <div className="rounded-full border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/85 px-4 py-2 text-xs font-semibold text-[color:var(--text)] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.28)] backdrop-blur-2xl">
             Loading 3D: {progress.toFixed(0)}%
           </div>
         </div>

@@ -1,8 +1,7 @@
 ﻿import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Header } from "@/components/layout/header";
 import { BubblesBackground } from "@/components/ui/bubbles-background";
-import { PageTransition } from "@/components/layout/page-transition";
+import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,21 +38,14 @@ export default function RootLayout({
           aria-hidden
           style={{
             background:
-              "radial-gradient(circle at 18% 18%, rgba(47,183,255,0.12), transparent 32%), radial-gradient(circle at 84% 8%, rgba(65,224,196,0.16), transparent 36%), radial-gradient(circle at 50% 78%, rgba(18,110,235,0.14), transparent 40%), #f6fbff",
-            filter: "blur(2px)",
+              "radial-gradient(circle at 18% 18%, rgba(47,183,255,0.2), transparent 38%), radial-gradient(circle at 84% 8%, rgba(65,224,196,0.18), transparent 40%), radial-gradient(circle at 50% 78%, rgba(18,110,235,0.16), transparent 44%), #050b16",
+            filter: "blur(4px)",
           }}
         />
         <div className="edge-flash edge-left" aria-hidden />
         <div className="edge-flash edge-right" aria-hidden />
         <BubblesBackground />
-        <div className="relative z-10 flex min-h-screen flex-col">
-          <Header />
-          <PageTransition>
-            <main className="flex-1 pb-16 pt-[92px] sm:pt-[104px]">
-              <div className="page-shell">{children}</div>
-            </main>
-          </PageTransition>
-        </div>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

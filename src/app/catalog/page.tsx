@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import products from "@/content/products.json";
@@ -137,7 +137,7 @@ export default function CatalogPage() {
         </p>
       </Reveal>
 
-      <Reveal className="space-y-4 rounded-[28px] border border-white/30 bg-white/85 p-6 shadow-[var(--shadow-2)] backdrop-blur-2xl sm:p-10">
+      <Reveal className="space-y-4 rounded-[28px] border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/85 p-6 shadow-[var(--shadow-2)] backdrop-blur-2xl sm:p-10">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-2">
             <GlassBadge tone="neutral">Каталог и запрос КП</GlassBadge>
@@ -170,7 +170,7 @@ export default function CatalogPage() {
               </div>
               <div className="space-y-2">
                 {idx === 0 && (
-                  <div className="overflow-hidden rounded-2xl border border-white/30 bg-white/30 p-4 shadow-[var(--shadow-1)]">
+                  <div className="overflow-hidden rounded-2xl border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/30 p-4 shadow-[var(--shadow-1)]">
                     <img
                       src={item.images?.[0] || "/application/apparat.png"}
                       alt={item.title}
@@ -200,7 +200,7 @@ export default function CatalogPage() {
         </div>
       </Reveal>
 
-      <section className="space-y-5 rounded-[28px] border border-white/35 bg-white/80 p-6 shadow-[var(--shadow-2)] backdrop-blur-2xl sm:p-10">
+      <section className="space-y-5 rounded-[28px] border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/80 p-6 shadow-[var(--shadow-2)] backdrop-blur-2xl sm:p-10">
         <Reveal className="space-y-4">
           <div className="space-y-2">
             <GlassBadge tone="accent">Ингаляционный метод</GlassBadge>
@@ -212,7 +212,7 @@ export default function CatalogPage() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {inhalationUnits.map((item) => (
-              <GlassCard key={item.name} className="space-y-3 border-white/40 bg-white/90 shadow-[var(--shadow-1)]">
+              <GlassCard key={item.name} className="space-y-3 border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/90 shadow-[var(--shadow-1)]">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-xl font-semibold text-[color:var(--text)]">{item.name}</h3>
                   <span className="h-2.5 w-2.5 rounded-full bg-[color:var(--accent-blue)]/60 shadow-[0_0_0_8px_rgba(18,110,235,0.12)]" />
@@ -227,13 +227,13 @@ export default function CatalogPage() {
             ))}
           </div>
 
-          <GlassCard className="space-y-3 border-white/40 bg-white/90 shadow-[var(--shadow-1)]">
+          <GlassCard className="space-y-3 border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/90 shadow-[var(--shadow-1)]">
             <h3 className="text-lg font-semibold text-[color:var(--text)]">Показания для ингаляционного метода</h3>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {inhalationIndications.map((item) => (
                 <div
                   key={item}
-                  className="rounded-2xl border border-white/40 bg-white/70 px-3 py-2 text-sm text-[color:var(--muted)] shadow-[0_10px_30px_-18px_rgba(18,110,235,0.35)]"
+                  className="rounded-2xl border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/70 px-3 py-2 text-sm text-[color:var(--muted)] shadow-[0_10px_30px_-18px_rgba(18,110,235,0.35)]"
                 >
                   {item}
                 </div>
@@ -243,7 +243,7 @@ export default function CatalogPage() {
         </Reveal>
       </section>
 
-      <section className="space-y-5 rounded-[28px] border border-white/35 bg-white/80 p-6 shadow-[var(--shadow-2)] backdrop-blur-2xl sm:p-10">
+      <section className="space-y-5 rounded-[28px] border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/80 p-6 shadow-[var(--shadow-2)] backdrop-blur-2xl sm:p-10">
         <Reveal className="space-y-4">
           <div className="space-y-2">
             <GlassBadge tone="accent">Трансдермальный метод</GlassBadge>
@@ -256,7 +256,7 @@ export default function CatalogPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             {capsuleItems.map((capsule) => (
-              <GlassCard key={capsule.name} className="space-y-3 border-white/40 bg-white/90 shadow-[var(--shadow-1)]">
+              <GlassCard key={capsule.name} className="space-y-3 border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/90 shadow-[var(--shadow-1)]">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <h3 className="text-xl font-semibold text-[color:var(--text)]">{capsule.name}</h3>
@@ -269,10 +269,10 @@ export default function CatalogPage() {
                 <p className="text-sm text-[color:var(--muted)]">{capsule.description}</p>
                 {capsule.note && <p className="text-xs text-[color:var(--muted)]">{capsule.note}</p>}
                 <div className="flex flex-wrap gap-2 text-xs font-semibold text-[color:var(--text)]">
-                  <span className="rounded-full bg-white/80 px-3 py-1 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.22)]">
+                  <span className="rounded-full bg-[color:var(--glass-bg)]/80 px-3 py-1 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.22)]">
                     Габариты: {capsule.specs}
                   </span>
-                  <span className="rounded-full bg-white/80 px-3 py-1 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.22)]">
+                  <span className="rounded-full bg-[color:var(--glass-bg)]/80 px-3 py-1 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.22)]">
                     Масса: {capsule.weight}
                   </span>
                 </div>
@@ -281,7 +281,7 @@ export default function CatalogPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <GlassCard className="space-y-2 border-white/40 bg-white/90 shadow-[var(--shadow-1)]">
+            <GlassCard className="space-y-2 border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/90 shadow-[var(--shadow-1)]">
               <h3 className="text-lg font-semibold text-[color:var(--text)]">Ключевые преимущества</h3>
               <ul className="space-y-2 text-sm text-[color:var(--muted)]">
                 {capsuleBenefits.map((item) => (
@@ -292,13 +292,13 @@ export default function CatalogPage() {
                 ))}
               </ul>
             </GlassCard>
-            <GlassCard className="space-y-3 border-white/40 bg-white/90 shadow-[var(--shadow-1)]">
+            <GlassCard className="space-y-3 border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/90 shadow-[var(--shadow-1)]">
               <h3 className="text-lg font-semibold text-[color:var(--text)]">Показания для капсул</h3>
               <div className="grid gap-2 sm:grid-cols-2">
                 {capsuleIndications.map((item) => (
                   <div
                     key={item}
-                    className="rounded-2xl border border-white/40 bg-white/75 px-3 py-2 text-sm text-[color:var(--muted)] shadow-[0_10px_30px_-18px_rgba(18,110,235,0.35)]"
+                    className="rounded-2xl border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/75 px-3 py-2 text-sm text-[color:var(--muted)] shadow-[0_10px_30px_-18px_rgba(18,110,235,0.35)]"
                   >
                     {item}
                   </div>
@@ -315,7 +315,7 @@ export default function CatalogPage() {
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           {novelties.map((item) => (
-            <GlassCard key={item.title} className="space-y-3 border-white/40 bg-white/90 shadow-[var(--shadow-1)]">
+            <GlassCard key={item.title} className="space-y-3 border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/90 shadow-[var(--shadow-1)]">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-xl font-semibold text-[color:var(--text)]">{item.title}</h3>
                 <span className="h-2.5 w-2.5 rounded-full bg-[color:var(--accent-blue)]/60 shadow-[0_0_0_8px_rgba(18,110,235,0.12)]" />
@@ -334,7 +334,7 @@ export default function CatalogPage() {
           {accessories.map((item) => (
             <GlassCard
               key={item}
-              className="border-white/40 bg-white/90 px-5 py-4 text-center text-sm font-semibold text-[color:var(--text)] shadow-[var(--shadow-1)]"
+              className="border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/90 px-5 py-4 text-center text-sm font-semibold text-[color:var(--text)] shadow-[var(--shadow-1)]"
             >
               {item}
             </GlassCard>

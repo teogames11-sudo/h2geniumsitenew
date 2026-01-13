@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -13,16 +13,16 @@ const SceneTree = dynamic(() => import("./SceneTree").then((mod) => mod.SceneTre
   loading: () => <div className="h-full w-full" aria-hidden />,
 });
 
-const heroText = {
+export const heroText = {
   title: "Водородные генераторы для профессиональной терапии",
-  description: "Возвращаем молодость и укрепляем здоровье инновационным способом",
+  description: "Интегратор решений на базе молекулярного водорода для кабинетов, клиник и wellness-проектов.",
 };
 
 const orbitLinks = [
-  { label: "Оставить заявку", href: "#lead", hint: "Подбор решения под ваш запрос" },
-  { label: "Кабинеты", href: "/application", hint: "Форматы ингаляции и капсул" },
-  { label: "Каталог", href: "/catalog", hint: "Линейки оборудования HYDROGENIUM" },
-  { label: "NADH", href: "/nadh", hint: "Подход и протоколы" },
+  { label: "Оставить заявку", href: "/contacts#form", hint: "Подберем конфигурацию кабинета и формат терапии." },
+  { label: "Применение", href: "/application", hint: "Форматы кабинетов: ингаляции, капсулы, бальнео и IV." },
+  { label: "Каталог", href: "/catalog", hint: "Оборудование и комплектации HYDROGENIUM." },
+  { label: "NADH", href: "/nadh", hint: "Материалы о NADH и водородной терапии." },
 ];
 
 const HeroTree3DComponent = () => {
@@ -252,7 +252,7 @@ const HeroTree3DComponent = () => {
                                 transformOrigin: "50% 50%",
                               }}
                             >
-                              <GlassCard className="group rounded-full border-white/50 bg-white/95 px-4 py-3 text-left shadow-[0_22px_52px_-22px_rgba(18,110,235,0.45)] transition hover:-translate-y-[2px]">
+                              <GlassCard className="group rounded-full border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/90 px-4 py-3 text-left shadow-[0_22px_52px_-22px_rgba(18,110,235,0.45)] transition hover:-translate-y-[2px]">
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="text-sm font-semibold text-[color:var(--text)]">{item.label}</div>
                                   <span className="h-2 w-2 rounded-full bg-[color:var(--accent-blue)]/70 shadow-[0_0_0_8px_rgba(18,110,235,0.14)] transition duration-200 group-hover:shadow-[0_0_0_10px_rgba(65,224,196,0.18)]" />

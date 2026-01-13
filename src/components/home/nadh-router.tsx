@@ -226,21 +226,21 @@ export const NadhRouter = ({ wide = false }: NadhRouterProps) => {
   };
 
   const sectionClasses = clsx(
-    "relative mt-12 space-y-8 overflow-visible rounded-[28px] border border-white/35 bg-[color:var(--glass-bg)]/85 shadow-[var(--shadow-2),0_28px_84px_-32px_rgba(18,110,235,0.42)] backdrop-blur-2xl",
+    "relative mt-12 space-y-8 overflow-visible rounded-[28px] border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/85 shadow-[var(--shadow-2),0_28px_84px_-32px_rgba(18,110,235,0.42)] backdrop-blur-2xl",
     wide ? "mx-[-18px] sm:mx-[-32px] lg:mx-[-56px] px-6 sm:px-10 lg:px-14 py-8 sm:py-10" : "p-6 sm:p-10",
   );
 
   return (
     <section id="nadh" className={sectionClasses}>
       <div className="pointer-events-none absolute inset-[-28px] -z-10 rounded-[42px] bg-[radial-gradient(circle_at_40%_28%,rgba(47,183,255,0.2),transparent_55%),radial-gradient(circle_at_72%_72%,rgba(65,224,196,0.16),transparent_55%)] blur-[76px] opacity-80 animate-[softGlow_5.4s_ease-in-out_infinite]" />
-      <div className="pointer-events-none absolute inset-0 -z-10 rounded-[32px] bg-gradient-to-b from-white/40 via-transparent to-white/10" />
+      <div className="pointer-events-none absolute inset-0 -z-10 rounded-[32px] bg-gradient-to-b from-[rgba(90,160,220,0.18)] via-transparent to-[rgba(10,20,40,0.2)]" />
 
       <Reveal className="space-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <GlassBadge tone="mint">NADH</GlassBadge>
         </div>
 
-        <GlassCard className="relative overflow-hidden border-white/30 bg-white/80 p-4 sm:p-6">
+        <GlassCard className="relative overflow-hidden border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/80 p-4 sm:p-6">
           <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_24%_24%,rgba(47,183,255,0.14),transparent_36%),radial-gradient(circle_at_82%_60%,rgba(65,224,196,0.12),transparent_32%)] blur-[38px]" />
 
           <div ref={bubbleLayerRef} className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -263,14 +263,14 @@ export const NadhRouter = ({ wide = false }: NadhRouterProps) => {
                         map.set(bubble.id, node);
                       }
                     }}
-                    className="pointer-events-none absolute rounded-full bg-white"
+                    className="pointer-events-none absolute rounded-full bg-[color:var(--accent-cyan)]/70"
                     style={{
                       width: bubble.radius * 2,
                       height: bubble.radius * 2,
                       left: baseX,
                       top: baseY,
                       opacity: bubble.opacity,
-                      filter: `blur(${bubble.blur}px) drop-shadow(0 0 12px rgba(255,255,255,0.22))`,
+                      filter: `blur(${bubble.blur}px) drop-shadow(0 0 12px rgba(120,210,255,0.28))`,
                       transform: "translate(-50%, -50%)",
                     }}
                     aria-hidden
@@ -280,12 +280,12 @@ export const NadhRouter = ({ wide = false }: NadhRouterProps) => {
             })()}
           </div>
 
-          <div
-            ref={orbitRef}
-            className="relative z-10 min-h-[520px] overflow-visible rounded-[22px] border border-white/35 bg-gradient-to-br from-white/70 via-white/40 to-[color:var(--accent-blue)]/6"
-            onMouseMove={handleMouseMove}
-            onMouseLeave={resetMouse}
-          >
+            <div
+              ref={orbitRef}
+              className="relative z-10 min-h-[520px] overflow-visible rounded-[22px] border border-[color:var(--glass-stroke)] bg-gradient-to-br from-[rgba(10,20,40,0.85)] via-[rgba(10,20,40,0.55)] to-[color:var(--accent-blue)]/12"
+              onMouseMove={handleMouseMove}
+              onMouseLeave={resetMouse}
+            >
             <div className="pointer-events-none absolute inset-0">
               {/* bubble layer is above */}
             </div>
@@ -329,14 +329,14 @@ export const NadhRouter = ({ wide = false }: NadhRouterProps) => {
               </svg>
             )}
 
-            <div className="pointer-events-none absolute left-1/2 top-1/2 h-[210px] w-[210px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/35 bg-white/60 shadow-[0_18px_44px_-18px_rgba(0,0,0,0.28)] backdrop-blur-2xl">
+            <div className="pointer-events-none absolute left-1/2 top-1/2 h-[210px] w-[210px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/70 shadow-[0_18px_44px_-18px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
               {!reduceMotion && (
                 <>
                   <span className="absolute inset-[-18%] rounded-full bg-[radial-gradient(circle_at_50%_50%,rgba(18,110,235,0.22),transparent_65%)] blur-[52px]" />
-                  <span className="absolute inset-[-32%] rounded-full border border-white/25" />
+                  <span className="absolute inset-[-32%] rounded-full border border-[color:var(--glass-stroke)]" />
                 </>
               )}
-              <div className="absolute inset-6 rounded-full border border-white/45 bg-white/70 shadow-[0_12px_32px_-18px_rgba(0,0,0,0.28)]" />
+              <div className="absolute inset-6 rounded-full border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/85 shadow-[0_12px_32px_-18px_rgba(0,0,0,0.38)]" />
               <div className="absolute inset-0 grid place-items-center text-center">
                 <div className="space-y-1">
                   <div className="text-xs uppercase tracking-[0.22em] text-[color:var(--muted)]">молекула</div>
@@ -373,7 +373,7 @@ export const NadhRouter = ({ wide = false }: NadhRouterProps) => {
                     onTouchStart={pauseForTouch}
                     aria-label={item.title}
                   >
-                    <GlassCard className="w-[240px] max-w-[260px] rounded-full border-white/45 bg-white/95 px-5 py-3 text-left shadow-[0_22px_52px_-22px_rgba(18,110,235,0.45)] transition hover:-translate-y-[1px]">
+                    <GlassCard className="w-[240px] max-w-[260px] rounded-full border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/90 px-5 py-3 text-left shadow-[0_22px_52px_-22px_rgba(18,110,235,0.45)] transition hover:-translate-y-[1px]">
                       <div className="text-sm font-semibold text-[color:var(--text)]">{item.title}</div>
                       <p className="text-[11px] leading-snug text-[color:var(--muted)]">{item.desc}</p>
                     </GlassCard>
@@ -387,7 +387,7 @@ export const NadhRouter = ({ wide = false }: NadhRouterProps) => {
           <div className="grid gap-3">
             {orbitItems.map((item) => (
               <Link key={item.href} href={item.href} aria-label={item.title}>
-                <GlassCard className="rounded-2xl border-white/40 bg-white/90 p-4 shadow-[var(--shadow-1)]">
+                <GlassCard className="rounded-2xl border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/90 p-4 shadow-[var(--shadow-1)]">
                   <div className="text-base font-semibold text-[color:var(--text)]">{item.title}</div>
                   <p className="text-sm leading-snug text-[color:var(--muted)]">{item.desc}</p>
                 </GlassCard>
@@ -396,7 +396,7 @@ export const NadhRouter = ({ wide = false }: NadhRouterProps) => {
           </div>
         )}
 
-        <GlassCard className="space-y-3 border-white/35 bg-white/85 p-5 shadow-[var(--shadow-1)]">
+        <GlassCard className="space-y-3 border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/85 p-5 shadow-[var(--shadow-1)]">
           <div id="formats" className="sr-only" aria-hidden="true" />
           <h3 className="text-xl font-semibold text-[color:var(--text)]">NADH: что это и почему это важно</h3>
           <p className="text-[color:var(--muted)]">

@@ -105,7 +105,7 @@ export default function ContactsPage() {
             Открыть в Яндекс.Картах
           </a>
         </div>
-        <div className="relative w-full overflow-hidden rounded-[32px] border border-white/30 shadow-[0_18px_50px_-18px_rgba(0,0,0,0.28),0_8px_24px_-12px_rgba(0,0,0,0.18)] backdrop-blur-2xl h-[520px] md:h-[620px] xl:h-[680px]">
+        <div className="relative w-full overflow-hidden rounded-[32px] border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/25 shadow-[0_18px_50px_-18px_rgba(0,0,0,0.28),0_8px_24px_-12px_rgba(0,0,0,0.18)] backdrop-blur-2xl h-[520px] md:h-[620px] xl:h-[680px]">
           <iframe
             title="Yandex Map — H2GENIUM"
             src="https://yandex.ru/map-widget/v1/?ll=37.583185%2C55.857523&z=16&pt=37.583185%2C55.857523%2Cpm2rdm"
@@ -117,7 +117,7 @@ export default function ContactsPage() {
             referrerPolicy="no-referrer-when-downgrade"
             className="absolute inset-0"
           />
-          <div className="pointer-events-none absolute left-4 top-4 rounded-2xl border border-white/30 bg-white/25 px-4 py-3 text-sm font-semibold text-[color:var(--text)] shadow-[0_18px_50px_-18px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+          <div className="pointer-events-none absolute left-4 top-4 rounded-2xl border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/70 px-4 py-3 text-sm font-semibold text-[color:var(--text)] shadow-[0_18px_50px_-18px_rgba(0,0,0,0.32)] backdrop-blur-xl">
             <div>Алтуфьевское ш., 27</div>
             <div className="text-xs text-[color:var(--muted)]">55.857523, 37.583185</div>
           </div>

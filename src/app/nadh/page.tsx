@@ -167,7 +167,7 @@ export default function NadhPage() {
       </Reveal>
 
       <Reveal className="relative">
-        <GlassCard className="relative mx-auto max-w-5xl space-y-6 overflow-hidden border-white/35 bg-white/85 p-6 shadow-[var(--shadow-2)] backdrop-blur-2xl md:p-10">
+        <GlassCard className="relative mx-auto max-w-5xl space-y-6 overflow-hidden border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/85 p-6 shadow-[var(--shadow-2)] backdrop-blur-2xl md:p-10">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(47,183,255,0.12),transparent_36%),radial-gradient(circle_at_86%_20%,rgba(65,224,196,0.12),transparent_38%),radial-gradient(circle_at_50%_90%,rgba(18,110,235,0.08),transparent_40%)]" />
           <div className="relative space-y-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -181,7 +181,7 @@ export default function NadhPage() {
                   <a
                     key={item.href}
                     href={item.href}
-                    className="rounded-full border border-white/45 bg-white/75 px-3 py-1 shadow-[var(--shadow-2)] transition hover:text-[color:var(--text)]"
+                    className="rounded-full border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/70 px-3 py-1 shadow-[var(--shadow-2)] transition hover:text-[color:var(--text)]"
                   >
                     {item.label}
                   </a>
@@ -200,7 +200,7 @@ export default function NadhPage() {
                 Роль NAD+ трудно переоценить: он участвует в метаболизме, способствует восстановлению ДНК и даже регулирует наши биологические часы. Внутривенное введение, ранее считавшееся самым быстрым методом, постепенно уступает место более безопасным и эффективным альтернативам. Среди них лидирует чрескожное введение, превращающее привычный уход за кожей в поистине омолаживающий ритуал.
               </p>
             </div>
-            <div className="h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+            <div className="h-px bg-gradient-to-r from-transparent via-[rgba(120,210,255,0.35)] to-transparent" />
             <div id="transdermal-benefits" className="space-y-3">
               <h3 className="text-xl font-semibold text-[color:var(--text)]">Почему этот метод так эффективен?</h3>
               <ol className="space-y-3 list-decimal pl-5 text-[color:var(--muted)] marker:text-[color:var(--accent-blue)]">
@@ -211,7 +211,7 @@ export default function NadhPage() {
                 ))}
               </ol>
             </div>
-            <div className="h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+            <div className="h-px bg-gradient-to-r from-transparent via-[rgba(120,210,255,0.35)] to-transparent" />
             <div id="transdermal-methods" className="space-y-3">
               <h3 className="text-xl font-semibold text-[color:var(--text)]">Три ведущих метода чрескожного введения NAD+</h3>
               <p className="text-[color:var(--muted)]">
@@ -223,7 +223,7 @@ export default function NadhPage() {
                 ))}
               </ul>
             </div>
-            <div className="h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+            <div className="h-px bg-gradient-to-r from-transparent via-[rgba(120,210,255,0.35)] to-transparent" />
             <div id="intranasal" className="space-y-3">
               <h3 className="text-xl font-semibold text-[color:var(--text)]">Интраназальное введение NAD+</h3>
               <p className="text-[color:var(--muted)]">
@@ -255,7 +255,7 @@ export default function NadhPage() {
         ))}
       </div>
 
-      <Reveal className="space-y-4 rounded-[24px] border border-white/30 bg-white/70 p-6 shadow-[var(--shadow-1)] backdrop-blur-2xl md:p-8">
+      <Reveal className="space-y-4 rounded-[24px] border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/75 p-6 shadow-[var(--shadow-1)] backdrop-blur-2xl md:p-8">
         <div className="flex items-center gap-3">
           <GlassBadge tone="mint">Интерактив</GlassBadge>
         </div>
@@ -265,7 +265,7 @@ export default function NadhPage() {
         </p>
       </Reveal>
 
-      <Reveal className="rounded-[24px] border border-white/30 bg-white/75 p-6 shadow-[var(--shadow-1)] backdrop-blur-2xl md:p-8">
+      <Reveal className="rounded-[24px] border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/75 p-6 shadow-[var(--shadow-1)] backdrop-blur-2xl md:p-8">
         <div className="flex items-center gap-3">
           <GlassBadge tone="neutral">Термины</GlassBadge>
         </div>
@@ -279,7 +279,7 @@ export default function NadhPage() {
         </div>
       </Reveal>
 
-      <Reveal className="grid gap-4 rounded-[24px] border border-white/30 bg-white/70 p-6 shadow-[var(--shadow-1)] backdrop-blur-2xl md:grid-cols-[1.1fr_0.9fr] md:p-8">
+      <Reveal className="grid gap-4 rounded-[24px] border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/75 p-6 shadow-[var(--shadow-1)] backdrop-blur-2xl md:grid-cols-[1.1fr_0.9fr] md:p-8">
         <div className="space-y-3">
           <GlassBadge tone="mint">FAQ · Интерактив</GlassBadge>
           <h2 className="text-2xl font-semibold text-[color:var(--text)]">Частые вопросы</h2>

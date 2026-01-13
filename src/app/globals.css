@@ -1,20 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --glass-bg: rgba(255, 255, 255, 0.16);
-  --glass-stroke: rgba(255, 255, 255, 0.3);
-  --shadow-1: 0 18px 50px -18px rgba(0, 0, 0, 0.28);
-  --shadow-2: 0 8px 24px -12px rgba(0, 0, 0, 0.18);
+  --glass-bg: rgba(8, 14, 26, 0.62);
+  --glass-stroke: rgba(120, 210, 255, 0.22);
+  --shadow-1: 0 20px 60px -28px rgba(4, 10, 20, 0.78), 0 0 36px rgba(47, 183, 255, 0.14);
+  --shadow-2: 0 12px 30px -18px rgba(4, 10, 20, 0.6);
   --accent-cyan: #2fb7ff;
   --accent-blue: #126eeb;
   --accent-mint: #41e0c4;
-  --text: #0e1b2f;
-  --muted: rgba(14, 27, 47, 0.65);
-  --bg-grad: radial-gradient(circle at 20% 20%, #f7fbff 0, rgba(207, 231, 255, 0.25) 30%, transparent 45%),
-    radial-gradient(circle at 80% 0%, rgba(177, 231, 255, 0.6), transparent 35%),
-    radial-gradient(circle at 50% 80%, rgba(187, 228, 223, 0.55), transparent 40%),
-    #f5f9ff;
-  color-scheme: light;
+  --text: #ecf5ff;
+  --muted: rgba(236, 245, 255, 0.64);
+  --bg-grad:
+    radial-gradient(1200px 620px at 18% 16%, rgba(20, 70, 120, 0.45), transparent 62%),
+    radial-gradient(920px 560px at 82% 12%, rgba(30, 120, 155, 0.35), transparent 60%),
+    radial-gradient(820px 520px at 50% 78%, rgba(18, 110, 235, 0.25), transparent 62%),
+    linear-gradient(180deg, #04080f 0%, #060d18 46%, #050b16 100%);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -34,7 +35,8 @@
 }
 
 body {
-  background: transparent;
+  background: var(--bg-grad);
+  background-color: #050b16;
   color: var(--text);
   font-family: var(--font-geist-sans), "Inter", system-ui, -apple-system, sans-serif;
   min-height: 100vh;
@@ -44,13 +46,29 @@ body {
   text-rendering: geometricPrecision;
 }
 
+html.home-fullscreen {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  zoom: 1;
+}
+
+body.home-fullscreen {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
 a {
   color: inherit;
   text-decoration: none;
 }
 
 .glass-surface {
-  backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px) saturate(140%);
   background: var(--glass-bg);
   border: 1px solid var(--glass-stroke);
   box-shadow: var(--shadow-1), var(--shadow-2);
@@ -59,13 +77,27 @@ a {
 
 .glass-surface:hover {
   transform: translateY(-4px);
-  box-shadow: 0 22px 54px -18px rgba(0, 0, 0, 0.3), var(--shadow-2);
-  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 24px 60px -22px rgba(4, 10, 22, 0.75), 0 0 40px rgba(65, 224, 196, 0.25);
+  border-color: rgba(150, 220, 255, 0.45);
 }
 
 .glass-surface:focus-visible {
-  outline: 2px solid rgba(47, 183, 255, 0.6);
-  box-shadow: 0 0 0 8px rgba(47, 183, 255, 0.2), var(--shadow-1);
+  outline: 2px solid rgba(47, 183, 255, 0.7);
+  box-shadow: 0 0 0 8px rgba(47, 183, 255, 0.22), var(--shadow-1);
+}
+
+.glass {
+  backdrop-filter: blur(20px) saturate(150%);
+  background: rgba(8, 14, 26, 0.52);
+  border: 1px solid rgba(120, 210, 255, 0.2);
+  box-shadow: 0 20px 60px -30px rgba(4, 10, 20, 0.8), 0 0 26px rgba(47, 183, 255, 0.16);
+}
+
+.glass-strong {
+  backdrop-filter: blur(26px) saturate(160%);
+  background: rgba(6, 12, 22, 0.72);
+  border: 1px solid rgba(140, 225, 255, 0.28);
+  box-shadow: 0 28px 70px -32px rgba(3, 8, 18, 0.85), 0 0 42px rgba(47, 183, 255, 0.2);
 }
 
 .page-shell {
@@ -87,8 +119,8 @@ a {
 }
 
 ::selection {
-  background: rgba(18, 110, 235, 0.18);
-  color: var(--text);
+  background: rgba(65, 224, 196, 0.22);
+  color: #f6fbff;
 }
 
 @media (prefers-reduced-motion: reduce) {

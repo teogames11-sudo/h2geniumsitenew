@@ -31,7 +31,7 @@ export default function CertificatePage() {
               {doc.description && <p className="text-base text-[color:var(--muted)]">{doc.description}</p>}
             </div>
             {isImage(doc.url) && (
-              <div className="relative flex-1 overflow-hidden rounded-3xl border border-white/50 shadow-[var(--shadow-1)]">
+              <div className="relative flex-1 overflow-hidden rounded-3xl border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/20 shadow-[var(--shadow-1)]">
                 <img
                   src={doc.url}
                   alt={doc.title}

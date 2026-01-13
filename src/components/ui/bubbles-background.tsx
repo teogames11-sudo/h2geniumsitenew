@@ -187,9 +187,9 @@ export const BubblesBackground = () => {
             filter: `blur(${bubble.blur}px)`,
             mixBlendMode: bubble.mix,
             background:
-              "radial-gradient(circle at 28% 26%, rgba(255,255,255,0.86), rgba(255,255,255,0.12) 36%, transparent 60%)," +
-              "radial-gradient(circle at 70% 72%, rgba(150,215,255,0.9), rgba(72,160,255,0.38) 38%, rgba(18,110,235,0.12) 64%, transparent 82%)," +
-              "radial-gradient(circle at 46% 42%, rgba(90,170,255,0.6), rgba(40,120,235,0.22) 56%, transparent 78%)",
+              "radial-gradient(circle at 28% 26%, rgba(140,210,255,0.75), rgba(50,130,220,0.14) 36%, transparent 60%)," +
+              "radial-gradient(circle at 70% 72%, rgba(120,210,255,0.72), rgba(40,120,220,0.28) 38%, rgba(18,90,190,0.12) 64%, transparent 82%)," +
+              "radial-gradient(circle at 46% 42%, rgba(80,160,255,0.55), rgba(30,90,190,0.2) 56%, transparent 78%)",
             boxShadow: `0 0 0 10px rgba(170, 225, 255, 0.2), 0 0 ${46 + bubble.glow}px ${18 + bubble.glow * 0.34}px rgba(30, 110, 235, 0.34)`,
             animationDuration: `${bubble.duration}s`,
             animationDelay: `-${bubble.delay}s`,

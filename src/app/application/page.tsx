@@ -114,7 +114,7 @@ export default function ApplicationPage() {
                 </div>
                 <div className="relative">
                   <div className="absolute inset-[-16px] rounded-3xl bg-[radial-gradient(circle_at_50%_50%,rgba(47,183,255,0.2),transparent_65%)] blur-2xl" />
-                  <div className="relative overflow-hidden rounded-3xl border border-white/40 bg-white/20 shadow-[var(--shadow-1)] backdrop-blur-xl">
+                  <div className="relative overflow-hidden rounded-3xl border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/25 shadow-[var(--shadow-1)] backdrop-blur-xl">
                     <img src={section.image} alt={section.title} className="h-full w-full object-cover" loading="lazy" />
                   </div>
                 </div>

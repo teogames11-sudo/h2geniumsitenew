@@ -1,0 +1,707 @@
+.heroFixed {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: stretch;
+  justify-items: stretch;
+  background: transparent;
+  color: #eef6ff;
+  pointer-events: auto;
+  isolation: isolate;
+  --side-inset: clamp(28px, 7vw, 160px);
+  --ui-scale: 0.9;
+  --tree-scale: 2.21;
+}
+
+.scene {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  margin: 0;
+  z-index: 20;
+  pointer-events: none;
+  transform: scale(var(--ui-scale));
+  transform-origin: center top;
+}
+
+.navDock {
+  position: relative;
+  padding-bottom: calc(36px + env(safe-area-inset-bottom));
+  padding-top: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  width: 100%;
+  margin: 0;
+  pointer-events: auto;
+  z-index: 40;
+  transform: scale(var(--ui-scale));
+  transform-origin: center bottom;
+}
+
+.navDock a,
+.navDock button {
+  pointer-events: auto;
+}
+
+.backgroundLayer,
+.starsLayer,
+.decorLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+.starsLayer {
+  inset: 0;
+}
+
+.decorLayer {
+  inset: 0;
+  z-index: 10;
+}
+
+.horizonGlow {
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  width: min(1400px, 140vw);
+  height: clamp(200px, 30vh, 380px);
+  transform: translateX(-50%);
+  background:
+    radial-gradient(60% 100% at 50% 100%, rgba(60, 170, 255, 0.28) 0%, rgba(18, 110, 235, 0) 62%),
+    radial-gradient(46% 90% at 50% 100%, rgba(65, 224, 196, 0.25) 0%, rgba(6, 20, 40, 0) 70%);
+  filter: blur(8px);
+  opacity: 0.7;
+}
+
+.groundGrid {
+  position: absolute;
+  left: 50%;
+  bottom: 4%;
+  width: min(1500px, 160vw);
+  height: clamp(160px, 24vh, 280px);
+  transform: translateX(-50%);
+  opacity: 0.04;
+  mask-image: radial-gradient(ellipse at 50% 100%, black 0%, transparent 72%);
+}
+
+.groundGrid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 90% at 50% 100%, rgba(24, 110, 235, 0.25) 0%, rgba(6, 16, 32, 0) 70%);
+  filter: blur(0.2px);
+}
+
+.baseGlow {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  width: min(980px, 90vw);
+  height: clamp(140px, 22vh, 240px);
+  transform: translateX(-50%);
+  background:
+    radial-gradient(50% 100% at 50% 100%, rgba(80, 190, 255, 0.35), rgba(18, 110, 235, 0) 68%),
+    radial-gradient(38% 70% at 50% 100%, rgba(65, 224, 196, 0.32), rgba(6, 18, 30, 0) 65%);
+  filter: blur(10px);
+  opacity: 0.72;
+}
+
+.sideLinkLeft,
+.sideLinkRight {
+  position: absolute;
+  top: 46%;
+  transform: translateY(-50%) scale(var(--ui-scale));
+  transform-origin: center;
+  z-index: 40;
+  display: grid;
+  gap: 38px;
+  grid-template-rows: var(--side-row-height, var(--side-object-height)) auto;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
+  pointer-events: auto;
+  --side-object-width: clamp(200px, 22vw, 320px);
+  --side-object-height: clamp(200px, 22vw, 320px);
+}
+
+.sideLinkLeft {
+  left: var(--side-inset);
+  justify-items: start;
+  --side-object-height: clamp(110px, 12vw, 170px);
+  --side-row-height: clamp(200px, 22vw, 320px);
+}
+
+.sideLinkRight {
+  right: var(--side-inset);
+  justify-items: end;
+}
+
+.sideObjectLeft {
+  position: relative;
+  width: var(--side-object-width);
+  height: var(--side-object-height);
+  align-self: center;
+  border-radius: 999px;
+  background: linear-gradient(120deg, rgba(180, 230, 255, 0.2), rgba(80, 160, 255, 0.55));
+  border: 1px solid rgba(160, 220, 255, 0.35);
+  box-shadow: 0 0 40px rgba(120, 200, 255, 0.25), inset 0 0 24px rgba(160, 230, 255, 0.45);
+  transform: rotate(-18deg);
+  opacity: 0.9;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  pointer-events: auto;
+}
+
+.sideObjectLeft::before {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.45), rgba(120, 210, 255, 0.1) 60%);
+}
+
+.capsuleCore {
+  position: absolute;
+  inset: 18%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(120, 220, 255, 0.18), rgba(100, 180, 255, 0.45));
+  filter: blur(0.2px);
+}
+
+.sideObjectRight {
+  position: relative;
+  width: var(--side-object-width);
+  height: var(--side-object-height);
+  display: grid;
+  place-items: center;
+  align-self: center;
+  filter: drop-shadow(0 0 34px rgba(120, 210, 255, 0.7));
+  opacity: 1;
+  transition: transform 0.18s ease, filter 0.18s ease;
+  pointer-events: auto;
+}
+
+.starSvg {
+  width: 100%;
+  height: 100%;
+  animation: starPulse 4.8s ease-in-out infinite;
+}
+
+.sideLabel,
+.sideLabelRu {
+  font-size: clamp(14px, 1.6vw, 22px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(220, 245, 255, 0.9);
+  text-shadow: 0 0 16px rgba(120, 210, 255, 0.35);
+  line-height: 1.2;
+  max-width: clamp(180px, 22vw, 320px);
+  min-height: 2.4em;
+}
+
+.sideLabelRu {
+  text-align: right;
+}
+
+.sideLinkLeft .sideLabel {
+  font-size: clamp(16px, 1.9vw, 24px);
+  color: rgba(236, 252, 255, 0.98);
+  text-shadow: 0 0 22px rgba(120, 220, 255, 0.55);
+}
+
+.sideLinkRight .sideLabelRu {
+  font-size: clamp(16px, 1.9vw, 24px);
+  color: rgba(236, 252, 255, 0.98);
+  text-shadow: 0 0 22px rgba(120, 220, 255, 0.55);
+}
+
+.sideLinkLeft:hover .sideObjectLeft {
+  transform: rotate(-18deg) scale(1.04);
+  box-shadow: 0 0 48px rgba(120, 200, 255, 0.35), inset 0 0 28px rgba(160, 230, 255, 0.55);
+}
+
+.sideLinkRight:hover .sideObjectRight {
+  transform: scale(1.04);
+  filter: drop-shadow(0 0 34px rgba(120, 210, 255, 0.65));
+}
+
+.star {
+  position: absolute;
+  border-radius: 9999px;
+  background: rgba(200, 230, 255, 0.95);
+  box-shadow: 0 0 8px rgba(120, 200, 255, 0.65);
+  transform: translate(-50%, -50%);
+  animation: starTwinkle var(--twinkle-duration, 3.6s) ease-in-out infinite;
+  animation-delay: var(--twinkle-delay, 0s);
+  will-change: transform, opacity;
+}
+
+.starBottom {
+  background: rgba(220, 245, 255, 0.98);
+  box-shadow: 0 0 12px rgba(130, 215, 255, 0.85);
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  perspective: 1200px;
+}
+
+.centerStage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.treeStage {
+  position: relative;
+  z-index: 20;
+  width: min(1100px, 92vw);
+  height: clamp(420px, 62vh, 860px);
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+.treeStage :global(canvas) {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.treeSlot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.treeSpin {
+  width: 100%;
+  height: 100%;
+  transform-origin: center;
+  transform: scale(var(--tree-scale));
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.treeCanvas {
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  transform: translateZ(0);
+}
+
+.orbitTitleWrap {
+  position: absolute;
+  top: clamp(-22px, 0.6vh, 12px);
+  left: 50%;
+  transform: translate(-50%, 0%);
+  z-index: 45;
+  pointer-events: none;
+  opacity: 1;
+  animation: orbitTitlePulse 3.8s ease-in-out infinite;
+}
+
+.orbitTitleSvg {
+  width: min(1040px, 94vw);
+  height: auto;
+}
+
+.orbitTitleText {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", sans-serif;
+  font-size: clamp(40px, 4.8vw, 60px);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  fill: rgba(236, 252, 255, 0.98);
+  stroke: rgba(150, 220, 255, 0.45);
+  stroke-width: 1;
+  paint-order: stroke;
+}
+
+.rootTendrils {
+  position: absolute;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  width: min(980px, 92vw);
+  height: clamp(180px, 22vh, 320px);
+  transform: translateX(-50%) scale(var(--ui-scale));
+  transform-origin: center bottom;
+  pointer-events: none;
+  z-index: 32;
+}
+
+.rootSvg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.rootLine {
+  fill: none;
+  stroke: rgba(170, 230, 255, 0.45);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px rgba(120, 210, 255, 0.35));
+  animation: rootPulse 4.8s ease-in-out infinite;
+}
+
+.rootLineAlt {
+  stroke: rgba(150, 220, 255, 0.35);
+  animation-delay: 0.8s;
+}
+
+.rootLineAltTwo {
+  stroke: rgba(150, 220, 255, 0.3);
+  animation-delay: 1.6s;
+}
+
+.orbitTitleTextCurlLeft,
+.orbitTitleTextCurlRight {
+  transform-box: fill-box;
+  opacity: 0.6;
+  stroke: none;
+}
+
+.orbitTitleTextCurlLeft {
+  transform-origin: left center;
+  transform: translateX(-6px) skewY(3deg) scaleX(0.96);
+  fill: rgba(210, 242, 255, 0.85);
+}
+
+.orbitTitleTextCurlRight {
+  transform-origin: right center;
+  transform: translateX(6px) skewY(-3deg) scaleX(0.96);
+  fill: rgba(210, 242, 255, 0.85);
+}
+
+.orbitTitlePath {
+  fill: none;
+  stroke: rgba(120, 210, 255, 0.45);
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 10px rgba(120, 210, 255, 0.6));
+  animation: orbitLinePulse 3.8s ease-in-out infinite;
+}
+
+.titleOrbit {
+  position: absolute;
+  top: clamp(140px, 20vh, 220px);
+  left: 50%;
+  width: min(900px, 78vw);
+  height: clamp(130px, 20vh, 240px);
+  transform: translateX(-50%) rotateX(62deg) rotateZ(-12deg);
+  transform-style: preserve-3d;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 16px rgba(90, 190, 255, 0.45));
+  animation: orbitPulse 4.6s ease-in-out infinite;
+}
+
+.orbitSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.titleArc {
+  position: absolute;
+  top: clamp(80px, 12vh, 160px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1200px, 96vw);
+  height: clamp(120px, 17vh, 210px);
+  pointer-events: none;
+  z-index: 6;
+}
+
+.titleSvg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.titleText {
+  font-size: clamp(30px, 4.2vw, 62px);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  fill: rgba(230, 248, 255, 0.95);
+  animation: orbitGlow 3.6s ease-in-out infinite;
+  filter: drop-shadow(0 0 14px rgba(120, 210, 255, 0.65));
+}
+
+.arcShell {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  z-index: 40;
+}
+
+.arcRow {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
+.arcRowInner {
+  z-index: 19;
+}
+
+.arcItem {
+  position: absolute;
+  --lift: 0px;
+  transform: translate(-50%, -50%) translateY(var(--lift));
+  transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, background 240ms ease;
+  pointer-events: auto;
+  z-index: 90;
+  min-width: 140px;
+  max-width: clamp(140px, 16vw, 200px);
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
+  text-shadow: 0 0 14px rgba(80, 170, 255, 0.5);
+}
+
+.arcItem:hover {
+  --lift: -8px;
+}
+
+.navButton {
+  pointer-events: auto;
+  position: relative;
+  z-index: 90;
+  animation: buttonPulse var(--pulse-duration, 3.6s) ease-in-out infinite;
+  animation-delay: var(--pulse-delay, 0s);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(90, 170, 235, 0.18) 100%);
+  border: 1px solid rgba(190, 235, 255, 0.35);
+  text-transform: uppercase;
+  box-shadow:
+    0 18px 36px -18px rgba(47, 183, 255, 0.55),
+    0 0 26px rgba(47, 183, 255, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 560ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 560ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    background 560ms cubic-bezier(0.2, 0.7, 0.2, 1), border-color 560ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  transform: translateZ(0);
+}
+
+.navButton::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -14px;
+  height: 16px;
+  background: radial-gradient(ellipse at center, rgba(60, 170, 255, 0.45) 0%, rgba(60, 170, 255, 0) 70%);
+  filter: blur(10px);
+  opacity: 0.6;
+  z-index: -1;
+  transition: opacity 560ms cubic-bezier(0.2, 0.7, 0.2, 1), transform 560ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.desktopNav {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  pointer-events: auto;
+  margin-bottom: 18px;
+}
+
+.desktopRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+}
+
+.desktopButton {
+  min-width: 180px;
+  max-width: 240px;
+  white-space: normal;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.navButton:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: rgba(220, 245, 255, 0.6);
+  box-shadow:
+    0 28px 60px -24px rgba(47, 183, 255, 0.85),
+    0 0 42px rgba(65, 224, 196, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.navButton:hover::after {
+  opacity: 0.9;
+  transform: translateY(4px) scale(1.05);
+}
+
+.mobileNav {
+  padding: 0 1rem;
+  width: 100%;
+  pointer-events: auto;
+  margin-bottom: 18px;
+}
+
+.noScrollbar {
+  scrollbar-width: none;
+}
+
+.noScrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .titleOrbit {
+    top: clamp(120px, 20vh, 180px);
+    width: min(700px, 90vw);
+    height: clamp(110px, 18vh, 190px);
+  }
+
+  .titleArc {
+    top: clamp(64px, 12vh, 130px);
+    width: min(680px, 92vw);
+    height: clamp(110px, 16vh, 180px);
+  }
+
+  .sideLabel,
+  .sideLabelRu {
+    letter-spacing: 0.16em;
+  }
+
+  .sideObjectLeft,
+  .sideObjectRight {
+    opacity: 0.55;
+  }
+}
+
+
+@keyframes starTwinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
+@keyframes orbitSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orbitGlow {
+  0%,
+  100% {
+    opacity: 0.65;
+    text-shadow: 0 0 12px rgba(120, 210, 255, 0.45);
+  }
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 18px rgba(120, 210, 255, 0.7);
+  }
+}
+
+@keyframes orbitTitlePulse {
+  0%,
+  100% {
+    opacity: 0.92;
+    transform: translate(-50%, 0%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, 0%) scale(1.015);
+  }
+}
+
+@keyframes orbitLinePulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes rootPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes orbitPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 12px rgba(90, 190, 255, 0.35));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 20px rgba(120, 210, 255, 0.65));
+  }
+}
+
+@keyframes buttonPulse {
+  0%,
+  100% {
+    box-shadow: 0 16px 36px -20px rgba(47, 183, 255, 0.55), 0 0 26px rgba(47, 183, 255, 0.25);
+  }
+  50% {
+    box-shadow: 0 22px 52px -20px rgba(47, 183, 255, 0.85), 0 0 40px rgba(65, 224, 196, 0.45);
+  }
+}
+
+@keyframes starPulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+.title {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Noto Sans Display", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(220, 245, 255, 0.92);
+  text-shadow: 0 0 18px rgba(120, 220, 255, 0.35);
+  position: absolute;
+  top: clamp(28px, 8vh, 120px);
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  z-index: 30;
+  pointer-events: none;
+}

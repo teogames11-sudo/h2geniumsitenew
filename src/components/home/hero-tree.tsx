@@ -43,7 +43,7 @@ const devices = [
 export const HeroTree = () => {
   return (
     <div className="relative h-[520px] w-full lg:h-[620px]">
-      <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-white/50 via-white/10 to-[rgba(65,224,196,0.14)] blur-[30px]" />
+      <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-[rgba(12,24,44,0.7)] via-[rgba(12,24,44,0.3)] to-[rgba(65,224,196,0.16)] blur-[30px]" />
       <svg viewBox="0 0 520 620" className="absolute inset-0 h-full w-full">
         <defs>
           <linearGradient id="treeGlow" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -84,7 +84,7 @@ export const HeroTree = () => {
           cx="260"
           cy="250"
           r="22"
-          fill="#fff"
+          fill="#d7f0ff"
           opacity={0.9}
           animate={{ scale: [1, 1.14, 1], filter: ["blur(4px)", "blur(10px)", "blur(4px)"] }}
           transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
