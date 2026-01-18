@@ -1,17 +1,14 @@
 ﻿"use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { CSSProperties, memo, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { CSSProperties, memo, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import clsx from "clsx";
-import { NAV_ITEMS } from "@/lib/nav";
+import { useReducedMotion } from "framer-motion";
+import { NAV_ITEMS } from "@/config/nav";
+import { NavPills } from "@/components/nav/NavPills";
+import { useNavMorph } from "@/components/transitions/NavMorphProvider";
 import styles from "./CinematicHero.module.css";
-
-const SceneTree = dynamic(() => import("./SceneTree").then((mod) => mod.SceneTree), {
-  ssr: false,
-  loading: () => <div className="h-full w-full" aria-hidden />,
-});
 
 const ARC_OUTER_START_DEG = 25;
 const ARC_OUTER_END_DEG = 155;
@@ -25,6 +22,8 @@ const ARC_OUTER_RADIUS = { min: 260, vw: 0.22, max: 420 };
 const ARC_INNER_RADIUS = { min: 190, vw: 0.18, max: 340 };
 const STAR_COUNT = 260;
 const TITLE = "ЭКОСИСТЕМА HYDROGENIUM";
+const NAV_NADH_KEY = "nadh";
+const NAV_CABINETS_KEY = "cabinets";
 
 const splitNavItems = () => ({
   outer: NAV_ITEMS.slice(0, 5),
@@ -94,8 +93,8 @@ const createStarsInRange = (count: number, seed: number, minTop: number, maxTop:
 };
 
 const getPulseVars = (index: number): CSSProperties => {
-  const delay = index * 0.18;
-  const duration = 3.2 + (index % 9) * 0.2;
+  const delay = index * 0.24;
+  const duration = 3.4 + (index % 9) * 0.24;
   return {
     "--pulse-delay": `${delay.toFixed(2)}s`,
     "--pulse-duration": `${duration.toFixed(2)}s`,
@@ -248,16 +247,221 @@ const ArcNavTwoRows = ({ className, anchorRef, containerRef }: ArcNavTwoRowsProp
 };
 
 const CinematicHeroComponent = () => {
-  const pathname = usePathname();
   const navRows = splitNavItems();
-  const mobileRows = [navRows.outer, navRows.inner].filter((row) => row.length > 0);
+  const mobileItems = [...navRows.outer, ...navRows.inner];
   const desktopRows = [navRows.inner, navRows.outer].filter((row) => row.length > 0);
   const stars = useMemo(() => createStars(STAR_COUNT, 202501), []);
   const starsBottom = useMemo(() => createStarsInRange(180, 202503, 48, 100), []);
-  const treeSlotRef = useRef<HTMLDivElement | null>(null);
+  const reduceMotion = useReducedMotion();
+  const router = useRouter();
+  const { startMorph } = useNavMorph();
+  const heroRef = useRef<HTMLElement | null>(null);
+  const centerRef = useRef<HTMLDivElement | null>(null);
+  const navMap = useMemo(() => new Map(NAV_ITEMS.map((item) => [item.key, item])), []);
+  const nadhHref = navMap.get(NAV_NADH_KEY)?.href ?? "/nadh";
+  const cabinetsHref = navMap.get(NAV_CABINETS_KEY)?.href ?? "/application";
+
+  useEffect(() => {
+    const root = heroRef.current;
+    if (!root) return;
+    if (reduceMotion) {
+      root.style.setProperty("--mx", "0px");
+      root.style.setProperty("--my", "0px");
+      return;
+    }
+
+    const finePointer = window.matchMedia("(pointer: fine)").matches;
+    let targetX = 0;
+    let targetY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let raf = 0;
+
+    const lerp = (from: number, to: number, t: number) => from + (to - from) * t;
+
+    const tick = () => {
+      currentX = lerp(currentX, targetX, 0.08);
+      currentY = lerp(currentY, targetY, 0.08);
+      root.style.setProperty("--mx", `${currentX.toFixed(2)}px`);
+      root.style.setProperty("--my", `${currentY.toFixed(2)}px`);
+      if (Math.abs(currentX - targetX) > 0.1 || Math.abs(currentY - targetY) > 0.1) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        raf = 0;
+      }
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!finePointer) return;
+      const rect = root.getBoundingClientRect();
+      const dx = (event.clientX - (rect.left + rect.width / 2)) / rect.width;
+      const dy = (event.clientY - (rect.top + rect.height / 2)) / rect.height;
+      targetX = dx * 14;
+      targetY = dy * 12;
+      if (!raf) {
+        raf = requestAnimationFrame(tick);
+      }
+    };
+
+    const handlePointerLeave = () => {
+      targetX = 0;
+      targetY = 0;
+      if (!raf) {
+        raf = requestAnimationFrame(tick);
+      }
+    };
+
+    if (!finePointer) return;
+    root.addEventListener("pointermove", handlePointerMove, { passive: true });
+    root.addEventListener("pointerleave", handlePointerLeave, { passive: true });
+
+    return () => {
+      root.removeEventListener("pointermove", handlePointerMove);
+      root.removeEventListener("pointerleave", handlePointerLeave);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [reduceMotion]);
+
+  useEffect(() => {
+    const root = heroRef.current;
+    if (!root) return;
+    const buttons = Array.from(root.querySelectorAll<HTMLElement>('button[data-nav-origin="home"]'));
+    if (!buttons.length) return;
+    const centerEl = centerRef.current;
+    if (!centerEl) return;
+
+    const update = () => {
+      const centerRect = centerEl.getBoundingClientRect();
+      const centerX = centerRect.left + centerRect.width / 2;
+      const centerY = centerRect.top + centerRect.height / 2;
+      buttons.forEach((button) => {
+        const rect = button.getBoundingClientRect();
+        const bx = rect.left + rect.width / 2;
+        const by = rect.top + rect.height / 2;
+        const dx = centerX - bx;
+        const dy = centerY - by;
+        const length = Math.min(720, Math.hypot(dx, dy));
+        const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+        button.style.setProperty("--line-length", `${length.toFixed(1)}px`);
+        button.style.setProperty("--line-angle", `${angle.toFixed(2)}deg`);
+      });
+    };
+
+    update();
+    const raf = requestAnimationFrame(update);
+    const observer = new ResizeObserver(update);
+    observer.observe(root);
+    observer.observe(centerEl);
+    buttons.forEach((button) => observer.observe(button));
+    window.addEventListener("resize", update);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", update);
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const root = heroRef.current;
+    if (!root) return;
+    const finePointer = window.matchMedia("(pointer: fine)").matches;
+
+    const setNavHover = (key?: string) => {
+      if (key) {
+        root.dataset.navHover = "true";
+        root.dataset.navHoverKey = key;
+      } else {
+        delete root.dataset.navHover;
+        delete root.dataset.navHoverKey;
+      }
+    };
+
+    const handlePointerOver = (event: PointerEvent) => {
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('button[data-nav-origin="home"]');
+      if (!target) return;
+      setNavHover(target.dataset.navKey);
+    };
+
+    const handlePointerOut = (event: PointerEvent) => {
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('button[data-nav-origin="home"]');
+      if (!target) return;
+      if (target.contains(event.relatedTarget as Node)) return;
+      setNavHover();
+      target.style.setProperty("--mag-x", "0px");
+      target.style.setProperty("--mag-y", "0px");
+    };
+
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('button[data-nav-origin="home"]');
+      if (!target) return;
+      setNavHover(target.dataset.navKey);
+    };
+
+    const handleFocusOut = (event: FocusEvent) => {
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('button[data-nav-origin="home"]');
+      if (!target) return;
+      if (target.contains(event.relatedTarget as Node)) return;
+      setNavHover();
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!finePointer) return;
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('button[data-nav-origin="home"]');
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      const dx = (event.clientX - (rect.left + rect.width / 2)) / rect.width;
+      const dy = (event.clientY - (rect.top + rect.height / 2)) / rect.height;
+      target.style.setProperty("--mag-x", `${(dx * 4).toFixed(2)}px`);
+      target.style.setProperty("--mag-y", `${(dy * 4).toFixed(2)}px`);
+    };
+
+    root.addEventListener("pointerover", handlePointerOver);
+    root.addEventListener("pointerout", handlePointerOut);
+    root.addEventListener("pointermove", handlePointerMove, { passive: true });
+    root.addEventListener("focusin", handleFocusIn);
+    root.addEventListener("focusout", handleFocusOut);
+
+    return () => {
+      root.removeEventListener("pointerover", handlePointerOver);
+      root.removeEventListener("pointerout", handlePointerOut);
+      root.removeEventListener("pointermove", handlePointerMove);
+      root.removeEventListener("focusin", handleFocusIn);
+      root.removeEventListener("focusout", handleFocusOut);
+    };
+  }, []);
+
+  const handleSideHover = (key?: string) => {
+    const root = heroRef.current;
+    if (!root) return;
+    if (key) {
+      root.dataset.highlight = key;
+    } else {
+      delete root.dataset.highlight;
+    }
+  };
+
+  const handleRipple = (event: PointerEvent<HTMLElement>) => {
+    const target = event.currentTarget;
+    target.dataset.pressed = "true";
+    window.setTimeout(() => {
+      delete target.dataset.pressed;
+    }, 260);
+  };
+
+  const handleDirectNav = (event: MouseEvent<HTMLElement>, key: string, href: string) => {
+    if (event.defaultPrevented) return;
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const item = navMap.get(key);
+    if (item && startMorph) {
+      startMorph(item);
+      return;
+    }
+    router.push(href);
+  };
 
   const hero = (
-    <section data-hero-root className={styles.heroFixed} aria-label="HYDROGENIUM hero section">
+    <section ref={heroRef} data-hero-root className={styles.heroFixed} aria-label="HYDROGENIUM hero section">
       <div className={styles.backgroundLayer} aria-hidden />
       <div className={styles.starsLayer} aria-hidden>
         {stars.map((star) => (
@@ -301,14 +505,34 @@ const CinematicHeroComponent = () => {
         <div className={styles.baseGlow} />
       </div>
 
-      <Link href="/nadh" className={styles.sideLinkLeft} aria-label="NADH CLINIC">
+      <Link
+        href={nadhHref}
+        className={styles.sideLinkLeft}
+        aria-label="NADH CLINIC"
+        onPointerEnter={() => handleSideHover(NAV_NADH_KEY)}
+        onPointerLeave={() => handleSideHover()}
+        onFocus={() => handleSideHover(NAV_NADH_KEY)}
+        onBlur={() => handleSideHover()}
+        onPointerDown={handleRipple}
+        onClick={(event) => handleDirectNav(event, NAV_NADH_KEY, nadhHref)}
+      >
         <div className={styles.sideObjectLeft} aria-hidden="true">
           <span className={styles.capsuleCore} />
         </div>
         <div className={styles.sideLabel}>NADH CLINIC</div>
       </Link>
 
-      <Link href="/application" className={styles.sideLinkRight} aria-label="Эпигенетическая коррекция">
+      <Link
+        href={cabinetsHref}
+        className={styles.sideLinkRight}
+        aria-label="Эпигенетическая коррекция"
+        onPointerEnter={() => handleSideHover(NAV_CABINETS_KEY)}
+        onPointerLeave={() => handleSideHover()}
+        onFocus={() => handleSideHover(NAV_CABINETS_KEY)}
+        onBlur={() => handleSideHover()}
+        onPointerDown={handleRipple}
+        onClick={(event) => handleDirectNav(event, NAV_CABINETS_KEY, cabinetsHref)}
+      >
         <div className={styles.sideObjectRight} aria-hidden="true">
           <svg className={styles.starSvg} viewBox="0 0 200 200" role="presentation" aria-hidden="true">
             <defs>
@@ -346,111 +570,79 @@ const CinematicHeroComponent = () => {
       </Link>
 
       <div className={styles.scene}>
+        <div ref={centerRef} className={styles.heroCenter} aria-hidden />
         <div className={styles.orbitTitleWrap} aria-label={TITLE}>
-          <svg className={styles.orbitTitleSvg} viewBox="0 0 1200 420" role="img" aria-hidden="true">
+          <div className={styles.orbitTitleParallax} aria-hidden="true">
+            <svg className={styles.orbitTitleSvg} viewBox="0 0 1200 420" role="img" aria-hidden="true">
             <defs>
-              <path id="orbitLine" d="M 140 262 L 1060 262" />
-              <linearGradient id="orbitFadeLeft" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-                <stop offset="55%" stopColor="#ffffff" stopOpacity="0" />
-              </linearGradient>
-              <linearGradient id="orbitFadeRight" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="45%" stopColor="#ffffff" stopOpacity="0" />
-                <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
-              </linearGradient>
-              <mask id="orbitMaskLeft" maskUnits="userSpaceOnUse">
-                <rect x="0" y="0" width="1200" height="420" fill="url(#orbitFadeLeft)" />
-              </mask>
-              <mask id="orbitMaskRight" maskUnits="userSpaceOnUse">
-                <rect x="0" y="0" width="1200" height="420" fill="url(#orbitFadeRight)" />
-              </mask>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                <feMerge>
-                  <feMergeNode in="coloredBlur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
+              <path id="orbitTitlePath" d="M 120 260 C 300 120 900 120 1080 260" />
+              <path id="orbitRingOuter" d="M 140 278 C 320 140 880 140 1060 278" />
+              <path id="orbitRingInner" d="M 170 300 C 340 176 860 176 1030 300" />
             </defs>
-            <use href="#orbitLine" className={styles.orbitTitlePath} />
-            <g filter="url(#glow)">
-              <text className={styles.orbitTitleText} x="600" y="244" textAnchor="middle">
-                {TITLE}
-              </text>
-              <text
-                className={clsx(styles.orbitTitleText, styles.orbitTitleTextCurlLeft)}
-                x="600"
-                y="244"
-                textAnchor="middle"
-                mask="url(#orbitMaskLeft)"
-              >
-                {TITLE}
-              </text>
-              <text
-                className={clsx(styles.orbitTitleText, styles.orbitTitleTextCurlRight)}
-                x="600"
-                y="244"
-                textAnchor="middle"
-                mask="url(#orbitMaskRight)"
-              >
-                {TITLE}
-              </text>
+            <g className={styles.orbitTitleOrbits} aria-hidden="true">
+              <use href="#orbitRingOuter" className={styles.orbitTitleRing} />
+              <use href="#orbitRingInner" className={clsx(styles.orbitTitleRing, styles.orbitTitleRingInner)} />
             </g>
+            <text className={styles.orbitTitleText}>
+              <textPath href="#orbitTitlePath" startOffset="50%" textAnchor="middle">
+                {TITLE}
+              </textPath>
+            </text>
+            <use href="#orbitTitlePath" className={styles.orbitTitlePath} />
           </svg>
+          </div>
         </div>
         <div className={styles.treeStage}>
-          <div ref={treeSlotRef} className={styles.treeSlot}>
-            <div className={styles.treeSpin}>
-              <SceneTree className={styles.treeCanvas} />
-            </div>
+          <div className={styles.treeSlot}>
+            <div className={styles.treeSpin} aria-hidden />
           </div>
         </div>
       </div>
 
       <div className={styles.rootTendrils} aria-hidden="true">
         <svg className={styles.rootSvg} viewBox="0 0 1200 360" role="presentation" aria-hidden="true">
-          <path className={styles.rootLine} d="M 600 12 C 582 86 562 142 544 198 C 520 260 480 300 420 340" />
+          <path className={styles.rootLine} d="M 580 6 C 564 80 548 138 532 196 C 510 258 474 298 414 340" />
           <path
             className={clsx(styles.rootLine, styles.rootLineAlt)}
-            d="M 600 12 C 622 92 662 154 690 212 C 722 272 760 310 820 340"
+            d="M 620 6 C 642 92 678 154 708 212 C 738 272 772 310 834 340"
           />
           <path
             className={clsx(styles.rootLine, styles.rootLineAltTwo)}
-            d="M 600 20 C 568 120 530 178 508 238 C 478 300 456 322 390 352"
+            d="M 560 12 C 536 112 506 172 484 232 C 456 294 430 320 370 352"
           />
           <path
             className={clsx(styles.rootLine, styles.rootLineAltTwo)}
-            d="M 600 20 C 632 120 670 178 692 238 C 722 300 744 322 810 352"
-          />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAlt)}
-            d="M 600 8 C 575 70 548 130 515 190 C 480 250 430 292 360 330"
+            d="M 640 12 C 664 112 694 172 716 232 C 744 294 770 320 830 352"
           />
           <path
             className={clsx(styles.rootLine, styles.rootLineAlt)}
-            d="M 600 8 C 625 70 652 130 685 190 C 720 250 770 292 840 330"
-          />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
-            d="M 600 6 C 570 50 540 110 500 160 C 460 210 410 250 330 300"
-          />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
-            d="M 600 6 C 630 50 660 110 700 160 C 740 210 790 250 870 300"
-          />
-          <path className={styles.rootLine} d="M 600 14 C 590 90 585 150 580 210 C 570 270 540 310 500 350" />
-          <path className={styles.rootLine} d="M 600 14 C 610 90 615 150 620 210 C 630 270 660 310 700 350" />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
-            d="M 600 22 C 560 110 520 170 470 228 C 430 280 380 310 300 342"
-          />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
-            d="M 600 22 C 640 110 680 170 730 228 C 770 280 820 310 900 342"
+            d="M 540 2 C 520 68 494 128 464 188 C 430 250 388 292 324 330"
           />
           <path
             className={clsx(styles.rootLine, styles.rootLineAlt)}
-            d="M 600 10 C 595 120 598 180 600 240 C 602 300 610 325 630 352"
+            d="M 660 2 C 680 68 706 128 736 188 C 770 250 812 292 876 330"
+          />
+          <path
+            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
+            d="M 520 0 C 496 50 470 108 438 158 C 404 210 356 250 300 300"
+          />
+          <path
+            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
+            d="M 680 0 C 704 50 730 108 762 158 C 796 210 844 250 900 300"
+          />
+          <path className={styles.rootLine} d="M 595 10 C 586 90 580 150 574 210 C 564 270 536 310 498 350" />
+          <path className={styles.rootLine} d="M 605 10 C 614 90 620 150 626 210 C 636 270 664 310 702 350" />
+          <path
+            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
+            d="M 550 14 C 516 108 478 168 432 226 C 392 278 350 310 288 342"
+          />
+          <path
+            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
+            d="M 650 14 C 684 108 722 168 768 226 C 808 278 850 310 912 342"
+          />
+          <path
+            className={clsx(styles.rootLine, styles.rootLineAlt)}
+            d="M 620 6 C 614 118 616 178 618 238 C 620 298 628 324 648 352"
           />
         </svg>
       </div>
@@ -459,56 +651,34 @@ const CinematicHeroComponent = () => {
         <nav className={clsx(styles.desktopNav, "hidden lg:flex")} aria-label="Main navigation">
           {desktopRows.map((row, rowIndex) => (
             <div key={`desktop-row-${rowIndex}`} className={styles.desktopRow}>
-              {row.map((item, itemIndex) => {
-                const pulseVars = getPulseVars(rowIndex * 6 + itemIndex);
-                const isActive = item.href === pathname;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={clsx(
-                      styles.navButton,
-                      styles.desktopButton,
-                      "inline-flex h-[52px] items-center justify-center rounded-full px-6 text-center text-[15px] font-medium text-white/90 backdrop-blur-xl",
-                      isActive && "text-white shadow-[0_22px_52px_-20px_rgba(47,183,255,0.8)]",
-                    )}
-                    style={pulseVars}
-                    aria-label={item.label}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
+              <NavPills
+                variant="homeDock"
+                items={row}
+                as="fragment"
+                itemClassName={clsx(
+                  styles.navButton,
+                  styles.desktopButton,
+                  "inline-flex h-[52px] items-center justify-center rounded-full px-6 text-center text-[15px] font-medium text-white/90 backdrop-blur-xl",
+                )}
+                activeClassName="text-white shadow-[0_22px_52px_-20px_rgba(47,183,255,0.8)]"
+                getItemStyle={(_, itemIndex) => getPulseVars(rowIndex * 6 + itemIndex)}
+              />
             </div>
           ))}
         </nav>
 
         <nav className={clsx(styles.mobileNav, "lg:hidden")} aria-label="Main navigation">
-          <div className="flex flex-col gap-3">
-            {mobileRows.map((row, rowIndex) => (
-              <div
-                key={`mobile-row-${rowIndex}`}
-                className={clsx("flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 pt-1", styles.noScrollbar)}
-              >
-                {row.map((item, itemIndex) => {
-                  const pulseVars = getPulseVars(rowIndex * 6 + itemIndex);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={clsx(
-                        styles.navButton,
-                        "inline-flex h-[52px] min-w-[210px] shrink-0 snap-center items-center justify-center whitespace-nowrap rounded-full px-7 text-[17px] font-medium text-white/90 backdrop-blur-xl md:h-[60px] md:px-8 md:text-lg",
-                      )}
-                      style={pulseVars}
-                      aria-label={item.label}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            ))}
+          <div className={clsx("flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 pt-1", styles.noScrollbar)}>
+            <NavPills
+              variant="homeDock"
+              items={mobileItems}
+              as="fragment"
+              itemClassName={clsx(
+                styles.navButton,
+                "inline-flex h-10 min-w-[150px] shrink-0 snap-center items-center justify-center whitespace-nowrap rounded-full px-4 text-[12px] font-medium text-white/90 backdrop-blur-xl",
+              )}
+              getItemStyle={(_, itemIndex) => getPulseVars(itemIndex)}
+            />
           </div>
         </nav>
       </div>
