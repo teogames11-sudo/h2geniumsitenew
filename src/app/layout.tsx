@@ -1,6 +1,5 @@
 ﻿import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { BubblesBackground } from "@/components/ui/bubbles-background";
 import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
@@ -42,9 +41,6 @@ export default function RootLayout({
             filter: "blur(4px)",
           }}
         />
-        <div className="edge-flash edge-left" aria-hidden />
-        <div className="edge-flash edge-right" aria-hidden />
-        <BubblesBackground />
         <AppShell>{children}</AppShell>
       </body>
     </html>

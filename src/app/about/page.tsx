@@ -1,6 +1,10 @@
-﻿import { GlassBadge, GlassCard } from "@/components/ui/glass";
+﻿import { GlassBadge } from "@/components/ui/glass";
 import { Reveal } from "@/components/ui/reveal";
 import { NadhRouter } from "@/components/home/nadh-router";
+import { EcosystemStory } from "@/components/about/EcosystemStory";
+import { EcosystemMap } from "@/components/about/EcosystemMap";
+import { TeamGrid } from "@/components/about/TeamGrid";
+import { PartnersGallery } from "@/components/about/PartnersGallery";
 
 export default function AboutPage() {
   return (
@@ -11,7 +15,16 @@ export default function AboutPage() {
         <p className="text-[color:var(--muted)]">Интегратор решений на базе молекулярного водорода для кабинетов, клиник и wellness-проектов.</p>
       </Reveal>
 
+      <EcosystemStory />
+
+      <EcosystemMap />
+
+      <TeamGrid />
+
+      <PartnersGallery />
+
       <NadhRouter />
     </div>
   );
 }
+

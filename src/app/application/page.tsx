@@ -1,5 +1,8 @@
 ﻿import { GlassBadge, GlassButton, GlassCard } from "@/components/ui/glass";
 import { Reveal } from "@/components/ui/reveal";
+import { CabinetConfigurator } from "@/components/application/CabinetConfigurator";
+import { CabinetTour } from "@/components/application/CabinetTour";
+import { ProtocolComparison } from "@/components/application/ProtocolComparison";
 
 type Section = {
   id: string;
@@ -81,6 +84,12 @@ export default function ApplicationPage() {
           Форматы оснащения и готовые кабинеты для ингаляции, чрескожных капсул, бальнео и IV-решений. Материалы — из буклета и действующих спецификаций.
         </p>
       </Reveal>
+
+      <CabinetConfigurator />
+
+      <CabinetTour />
+
+      <ProtocolComparison />
 
       <div className="relative space-y-6">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_0%_10%,rgba(47,183,255,0.18),transparent_40%),radial-gradient(circle_at_100%_90%,rgba(65,224,196,0.18),transparent_40%)] blur-[32px]" />

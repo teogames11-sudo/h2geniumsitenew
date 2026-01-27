@@ -36,6 +36,7 @@ export const BubblesBackground = () => {
   const offsetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const [isMobile, setIsMobile] = useState(false);
   const [prefersReduced, setPrefersReduced] = useState(false);
+  const [lowPower, setLowPower] = useState(false);
 
   useEffect(() => {
     const updateMobile = () => setIsMobile(window.innerWidth < 768);
@@ -52,42 +53,67 @@ export const BubblesBackground = () => {
     return () => mq.removeEventListener("change", update);
   }, []);
 
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string; addEventListener?: (t: string, cb: () => void) => void };
+      deviceMemory?: number;
+    };
+    const connection = nav.connection;
+    const update = () => {
+      const effectiveType = connection?.effectiveType ?? "";
+      const saveData = connection?.saveData === true;
+      const lowMemory = typeof nav.deviceMemory === "number" && nav.deviceMemory <= 4;
+      setLowPower(saveData || lowMemory || effectiveType.includes("2g"));
+    };
+    update();
+    connection?.addEventListener?.("change", update);
+    return () => connection?.removeEventListener?.("change", update);
+  }, []);
+
+  const motionEnabled = !prefersReduced && !lowPower;
+
   const bubbles = useMemo<Bubble[]>(() => {
-    const baseCount = isMobile ? 14 : 24;
-    const extraRight = isMobile ? 3 : 5;
+    const baseCount = isMobile ? 12 : 20;
+    const density = lowPower ? 0.6 : prefersReduced ? 0.8 : 1;
+    const count = Math.max(6, Math.round(baseCount * density));
+    const extraRight = isMobile ? 2 : 4;
+    const extraCount = Math.max(1, Math.round(extraRight * (lowPower ? 0.6 : 1)));
     const rnd = mulberry32(isMobile ? 20250130 : 20250129);
+    const motionScale = motionEnabled ? 1 : 0.55;
+    const parallaxScale = motionEnabled ? 1 : 0;
 
     const makeBubble = (idx: number, forcedRight = false, boosted = false): Bubble => {
       const strong = boosted || rnd() > 0.62;
-      const size = (isMobile ? 110 : 170) + rnd() * (isMobile ? 170 : 240);
+      const size = (isMobile ? 130 : 200) + rnd() * (isMobile ? 190 : 280);
       const x = forcedRight ? 65 + rnd() * 35 : rnd() * 100;
+      const durationBase = (isMobile ? 11 : 12) + rnd() * (isMobile ? 8 : 10);
       return {
         id: `bg-bubble-${idx}`,
         x,
         y: rnd() * 100,
-        size,
-        blur: (isMobile ? 8 : 10) + rnd() * (isMobile ? 7 : 10),
-        opacity: strong ? 0.82 + rnd() * 0.14 : 0.58 + rnd() * 0.18,
-        duration: (isMobile ? 11 : 12) + rnd() * (isMobile ? 8 : 10),
+        size: size * (lowPower ? 0.9 : 1),
+        blur: ((isMobile ? 14 : 18) + rnd() * (isMobile ? 10 : 16)) * (lowPower ? 0.9 : 1),
+        opacity: strong ? 0.52 + rnd() * 0.18 : 0.32 + rnd() * 0.16,
+        duration: durationBase * (motionEnabled ? 1 : 1.25),
         delay: rnd() * 8,
-        driftX: 62 + rnd() * (isMobile ? 56 : 104),
-        driftY: 118 + rnd() * (isMobile ? 120 : 168),
-        parallax: (isMobile ? 16 : 24) + rnd() * (isMobile ? 18 : 32),
-        glow: strong ? 52 + rnd() * 28 : 28 + rnd() * 18,
+        driftX: (52 + rnd() * (isMobile ? 52 : 96)) * motionScale,
+        driftY: (108 + rnd() * (isMobile ? 110 : 160)) * motionScale,
+        parallax: ((isMobile ? 16 : 24) + rnd() * (isMobile ? 18 : 32)) * parallaxScale,
+        glow: (strong ? 70 + rnd() * 28 : 38 + rnd() * 22) * (lowPower ? 0.8 : 1),
         mix: rnd() > 0.1 ? "screen" : "soft-light",
         influence: (isMobile ? 230 : 340) + rnd() * (isMobile ? 120 : 220),
       };
     };
 
     const list: Bubble[] = [];
-    for (let i = 0; i < baseCount; i++) {
+    for (let i = 0; i < count; i++) {
       list.push(makeBubble(i));
     }
-    for (let i = 0; i < extraRight; i++) {
-      list.push(makeBubble(baseCount + i, true, true));
+    for (let i = 0; i < extraCount; i++) {
+      list.push(makeBubble(count + i, true, true));
     }
     return list;
-  }, [isMobile]);
+  }, [isMobile, lowPower, motionEnabled, prefersReduced]);
 
   useEffect(() => {
     bubbleRefs.current.clear();
@@ -95,6 +121,7 @@ export const BubblesBackground = () => {
   }, [bubbles]);
 
   useEffect(() => {
+    if (!motionEnabled) return;
     let lastMove = 0;
     const handlePointerMove = (event: PointerEvent) => {
       const now = performance.now();
@@ -109,13 +136,13 @@ export const BubblesBackground = () => {
     };
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     return () => window.removeEventListener("pointermove", handlePointerMove);
-  }, []);
+  }, [motionEnabled]);
 
   useEffect(() => {
     const layer = layerRef.current;
-    if (!layer) return;
+    if (!layer || !motionEnabled) return;
 
-    const interval = 1000 / (prefersReduced ? 10 : 24);
+    const interval = 1000 / (lowPower ? 12 : 24);
     let last = performance.now();
 
     const tick = (ts: number) => {
@@ -154,7 +181,7 @@ export const BubblesBackground = () => {
 
     let raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [bubbles, prefersReduced]);
+  }, [bubbles, lowPower, motionEnabled]);
 
   return (
     <div
@@ -184,13 +211,17 @@ export const BubblesBackground = () => {
             left: 0,
             top: 0,
             opacity: bubble.opacity,
-            filter: `blur(${bubble.blur}px)`,
+            filter: `blur(${bubble.blur}px) saturate(1.05)`,
             mixBlendMode: bubble.mix,
             background:
-              "radial-gradient(circle at 28% 26%, rgba(140,210,255,0.75), rgba(50,130,220,0.14) 36%, transparent 60%)," +
-              "radial-gradient(circle at 70% 72%, rgba(120,210,255,0.72), rgba(40,120,220,0.28) 38%, rgba(18,90,190,0.12) 64%, transparent 82%)," +
-              "radial-gradient(circle at 46% 42%, rgba(80,160,255,0.55), rgba(30,90,190,0.2) 56%, transparent 78%)",
-            boxShadow: `0 0 0 10px rgba(170, 225, 255, 0.2), 0 0 ${46 + bubble.glow}px ${18 + bubble.glow * 0.34}px rgba(30, 110, 235, 0.34)`,
+              "radial-gradient(circle at 28% 26%, rgba(210,245,255,0.85), rgba(120,200,255,0.4) 32%, rgba(40,110,200,0.16) 58%, transparent 72%)," +
+              "radial-gradient(circle at 70% 74%, rgba(120,210,255,0.68), rgba(40,120,220,0.26) 38%, rgba(16,70,160,0.16) 62%, transparent 82%)," +
+              "radial-gradient(circle at 52% 52%, rgba(40,110,200,0.5), rgba(20,60,130,0.22) 55%, transparent 78%)",
+            boxShadow:
+              `inset 0 0 ${18 + bubble.glow * 0.2}px rgba(190, 240, 255, 0.45),` +
+              ` inset 0 -${20 + bubble.glow * 0.18}px ${34 + bubble.glow * 0.28}px rgba(8, 26, 60, 0.45),` +
+              ` 0 18px 40px -24px rgba(6, 14, 30, 0.55),` +
+              ` 0 0 ${48 + bubble.glow}px ${18 + bubble.glow * 0.3}px rgba(30, 110, 235, 0.28)`,
             animationDuration: `${bubble.duration}s`,
             animationDelay: `-${bubble.delay}s`,
             willChange: "transform, opacity, filter",

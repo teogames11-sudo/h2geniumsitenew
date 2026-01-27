@@ -1,1 +1,162 @@
-[]
+[
+  {
+    "url": "",
+    "slug": "hydrogenium-6000",
+    "title": "HYDROGENIUM 6000",
+    "description": "Компрессорный ингалятор с регулируемым потоком молекулярного водорода для кабинетного формата и небольших клиник.",
+    "images": ["/application/apparat.png", "/assets/rooms/inhalation.jpg"],
+    "documents": [{ "title": "PDF-спеки HYDROGENIUM 6000", "url": "/specs/hydrogenium-6000-specs.pdf" }],
+    "category": "Техника",
+    "tags": ["ингаляция", "клиника", "4000 мл/мин"],
+    "specs": [
+      { "label": "Поток H2", "value": "до 4000 мл/мин" },
+      { "label": "Чистота", "value": "99,9%" },
+      { "label": "Сеанс", "value": "20–30 минут" },
+      { "label": "Пропускная способность", "value": "до 4 клиентов/час" },
+      { "label": "Режимы", "value": "регулируемый поток" }
+    ],
+    "highlights": ["Сдвоенная секция электролиза", "Гибкие режимы потока под сценарии кабинета", "Подходит для групповых процедур"],
+    "model": "/models/Meshy_AI_Hydrogen_Harmony_0104202848_generate.glb"
+  },
+  {
+    "url": "",
+    "slug": "hydrogenium-8400",
+    "title": "HYDROGENIUM 8400",
+    "description": "Компрессорный ингалятор для ЛПУ и санаторно-курортных организаций с высокой пропускной способностью.",
+    "images": ["/application/apparat.png", "/assets/rooms/inhalation.jpg"],
+    "documents": [{ "title": "PDF-спеки HYDROGENIUM 8400", "url": "/specs/hydrogenium-8400-specs.pdf" }],
+    "category": "Техника",
+    "tags": ["ингаляция", "реабилитация", "5600 мл/мин"],
+    "specs": [
+      { "label": "Поток H2", "value": "до 5600 мл/мин" },
+      { "label": "Чистота", "value": "99,9%" },
+      { "label": "Сеанс", "value": "20 минут" },
+      { "label": "Пропускная способность", "value": "до 6 клиентов/час" },
+      { "label": "Режимы секций", "value": "925 / 1850 / 2800 мл/мин" }
+    ],
+    "highlights": ["Регистрационное удостоверение", "Контроль потока по секциям", "Удобен для потоковых программ"],
+    "model": "/models/Meshy_AI_Hydrogen_Harmony_0105125131_texture.glb"
+  },
+  {
+    "url": "",
+    "slug": "hydrogenium-12000",
+    "title": "HYDROGENIUM 12000",
+    "description": "Высокопоточный ингалятор для клиник с интенсивной нагрузкой и потоковыми программами.",
+    "images": ["/application/apparat.png", "/assets/rooms/inhalation.jpg"],
+    "documents": [{ "title": "PDF-спеки HYDROGENIUM 12000", "url": "/specs/hydrogenium-12000-specs.pdf" }],
+    "category": "Техника",
+    "tags": ["ингаляция", "спорт", "8000 мл/мин"],
+    "specs": [
+      { "label": "Поток H2", "value": "до 8000 мл/мин" },
+      { "label": "Чистота", "value": "99,9%" },
+      { "label": "Сеанс", "value": "20–30 минут" },
+      { "label": "Пропускная способность", "value": "до 8 клиентов/час" },
+      { "label": "Формат", "value": "потоковый кабинет" }
+    ],
+    "highlights": ["Максимальная производительность линейки", "Оптимален для реабилитационных центров", "Поддерживает параллельные сеансы"]
+  },
+  {
+    "url": "",
+    "slug": "hydrogenium-spa-h01",
+    "title": "HYDROGENIUM SPA H01",
+    "description": "Капсула для процедур в положении лежа с поддержкой тепло-, арома-, фито- и хромотерапии.",
+    "images": ["/assets/rooms/capsule.jpg", "/assets/rooms/cover-rooms.jpg"],
+    "documents": [{ "title": "PDF-спеки HYDROGENIUM SPA H01", "url": "/specs/hydrogenium-spa-h01-specs.pdf" }],
+    "category": "Мебель",
+    "tags": ["капсула", "medSPA", "чрескожно"],
+    "specs": [
+      { "label": "Формат", "value": "процедуры лежа" },
+      { "label": "Габариты", "value": "225×78×116 см" },
+      { "label": "Масса", "value": "85 кг" },
+      { "label": "Сеанс", "value": "около 20 минут" },
+      { "label": "Пропускная способность", "value": "до 2 клиентов/час" }
+    ],
+    "highlights": ["Совместима с NAD+ гелем", "Комфортные сценарии экспозиции", "Интеграция в медSPA-программы"]
+  },
+  {
+    "url": "",
+    "slug": "hydrogenium-spa-v01",
+    "title": "HYDROGENIUM SPA V01",
+    "description": "Капсула для процедур сидя с регулируемой посадкой и быстрым циклом обслуживания.",
+    "images": ["/assets/rooms/capsule.jpg", "/assets/rooms/cover-rooms.jpg"],
+    "documents": [{ "title": "PDF-спеки HYDROGENIUM SPA V01", "url": "/specs/hydrogenium-spa-v01-specs.pdf" }],
+    "category": "Мебель",
+    "tags": ["капсула", "wellness", "20 минут"],
+    "specs": [
+      { "label": "Формат", "value": "процедуры сидя" },
+      { "label": "Габариты", "value": "138×76×130 см" },
+      { "label": "Масса", "value": "60 кг" },
+      { "label": "Сеанс", "value": "около 20 минут" },
+      { "label": "Пропускная способность", "value": "до 2 клиентов/час" }
+    ],
+    "highlights": ["Регулируемая посадка", "Компактный формат", "Подходит для коротких процедур"]
+  },
+  {
+    "url": "",
+    "slug": "hydrogenium-nadh-gel",
+    "title": "HYDROGENIUM NAD+ GEL",
+    "description": "Косметический гель для процедур с фокусом на поддержку энергетического обмена и уходовые протоколы.",
+    "images": ["/assets/rooms/cover-rooms.jpg", "/application/apparat.png"],
+    "documents": [{ "title": "PDF-спеки NAD+ GEL", "url": "/specs/hydrogenium-nadh-gel-specs.pdf" }],
+    "category": "Косметика",
+    "tags": ["NAD+", "уход", "капсула"],
+    "specs": [
+      { "label": "Формат", "value": "гель для кожи" },
+      { "label": "Совместимость", "value": "капсулы, маски, аппликаторы" },
+      { "label": "Сценарий", "value": "курсовые программы" },
+      { "label": "Режим", "value": "нанесение перед процедурой" }
+    ],
+    "highlights": ["Мягкая текстура", "Подходит для неинвазивных протоколов", "Сочетается с водородной терапией"]
+  },
+  {
+    "url": "",
+    "slug": "hydrogenium-applicators",
+    "title": "Аппликаторы для гипербарической терапии",
+    "description": "Комплект аппликаторов для локальных процедур на конечностях с контролируемой подачей водорода.",
+    "images": ["/assets/rooms/iv.jpg", "/application/apparat.png"],
+    "documents": [{ "title": "PDF-спеки аппликаторов", "url": "/specs/hydrogenium-applicators-specs.pdf" }],
+    "category": "Аксессуары",
+    "tags": ["локальная терапия", "аппликаторы", "гипербарические"],
+    "specs": [
+      { "label": "Форм-фактор", "value": "манжеты для конечностей" },
+      { "label": "Режим", "value": "локальная инсуфляция" },
+      { "label": "Совместимость", "value": "HYDROGENIUM 6000/8400/12000" },
+      { "label": "Назначение", "value": "протоколы локального воздействия" }
+    ],
+    "highlights": ["Компактный аксессуар для расширения услуг", "Быстрое подключение", "Удобен для персонала"]
+  },
+  {
+    "url": "",
+    "slug": "hydrogenium-filters-kit",
+    "title": "Комплект фильтров и картриджей",
+    "description": "Расходные материалы для стабильной работы ингаляционных систем и водоподготовки.",
+    "images": ["/assets/rooms/cover-rooms.jpg", "/application/apparat.png"],
+    "documents": [{ "title": "PDF-спеки расходников", "url": "/specs/hydrogenium-filters-kit-specs.pdf" }],
+    "category": "Расходники",
+    "tags": ["фильтры", "обслуживание", "вода"],
+    "specs": [
+      { "label": "Состав", "value": "набор картриджей и фильтров" },
+      { "label": "Плановая замена", "value": "каждые 3–6 месяцев" },
+      { "label": "Совместимость", "value": "HYDROGENIUM 6000/8400/12000" },
+      { "label": "Назначение", "value": "стабильные параметры потока" }
+    ],
+    "highlights": ["Поддерживает стабильные режимы", "Упрощает сервис кабинета", "Поставляется комплектом"]
+  },
+  {
+    "url": "",
+    "slug": "hydrogenium-cabinet-start",
+    "title": "Концепция кабинета HYDROGENIUM START",
+    "description": "Готовая концепция кабинета для быстрого запуска услуг на базе молекулярного водорода.",
+    "images": ["/assets/rooms/cover-rooms.jpg", "/assets/rooms/inhalation.jpg"],
+    "documents": [{ "title": "PDF-спеки концепции", "url": "/specs/hydrogenium-cabinet-start-specs.pdf" }],
+    "category": "Концепции",
+    "tags": ["кабинет", "запуск", "проект"],
+    "specs": [
+      { "label": "Площадь", "value": "от 18 м²" },
+      { "label": "Состав", "value": "ингалятор + расходники + обучение" },
+      { "label": "Срок запуска", "value": "2–4 недели" },
+      { "label": "Формат", "value": "ингаляция и ресепшн зона" }
+    ],
+    "highlights": ["Быстрый запуск услуг", "Сценарии обслуживания и скрипты", "Подходит для клиник и wellness"]
+  }
+]

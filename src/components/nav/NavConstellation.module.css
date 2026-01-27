@@ -1,0 +1,98 @@
+.constellation {
+  position: absolute;
+  inset: -6px 0;
+  width: 100%;
+  height: calc(100% + 12px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
+}
+
+.constellationHeader {
+  opacity: 0.5;
+}
+
+.constellationHome {
+  opacity: 0.72;
+  mix-blend-mode: screen;
+}
+
+.line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 6 10;
+  animation: constellationDash 16s linear infinite, constellationPulse 6s ease-in-out infinite;
+}
+
+.lineHome {
+  stroke: rgba(120, 220, 255, 0.38);
+  stroke-width: 1.2;
+  stroke-dasharray: 10 14;
+}
+
+.lineHeader {
+  stroke: rgba(120, 220, 255, 0.24);
+  stroke-width: 1;
+  stroke-dasharray: 8 14;
+}
+
+.lineActive {
+  stroke: rgba(150, 235, 255, 0.85);
+  stroke-width: 1.6;
+  stroke-dasharray: none;
+  filter: drop-shadow(0 0 6px rgba(120, 220, 255, 0.65));
+}
+
+.lineHover {
+  stroke: rgba(190, 245, 255, 0.95);
+  stroke-width: 1.8;
+}
+
+.node {
+  fill: rgba(120, 220, 255, 0.45);
+  filter: drop-shadow(0 0 6px rgba(120, 220, 255, 0.45));
+  animation: constellationPulse 5.5s ease-in-out infinite;
+}
+
+.nodeHome {
+  fill: rgba(140, 230, 255, 0.55);
+}
+
+.nodeHeader {
+  fill: rgba(120, 220, 255, 0.35);
+}
+
+.nodeActive {
+  fill: rgba(210, 250, 255, 0.95);
+  filter: drop-shadow(0 0 10px rgba(150, 235, 255, 0.75));
+}
+
+.nodeHover {
+  fill: rgba(230, 255, 255, 1);
+}
+
+@keyframes constellationPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes constellationDash {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -160;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line,
+  .node {
+    animation: none;
+  }
+}

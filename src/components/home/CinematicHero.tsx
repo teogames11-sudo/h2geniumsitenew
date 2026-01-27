@@ -2,60 +2,35 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CSSProperties, memo, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import {
+  CSSProperties,
+  memo,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import clsx from "clsx";
 import { useReducedMotion } from "framer-motion";
 import { NAV_ITEMS } from "@/config/nav";
 import { NavPills } from "@/components/nav/NavPills";
 import { useNavMorph } from "@/components/transitions/NavMorphProvider";
+import { CursorTrail } from "@/components/home/CursorTrail";
+import { usePerformanceMode } from "@/hooks/usePerformanceMode";
 import styles from "./CinematicHero.module.css";
 
-const ARC_OUTER_START_DEG = 25;
-const ARC_OUTER_END_DEG = 155;
-const ARC_INNER_START_DEG = 35;
-const ARC_INNER_END_DEG = 145;
-const ARC_CENTER_X = 0.5;
-const ARC_CENTER_BASE_Y = 0.62;
-const ARC_BOTTOM_MARGIN = 28;
-const ARC_TOP_GAP = 14;
-const ARC_OUTER_RADIUS = { min: 260, vw: 0.22, max: 420 };
-const ARC_INNER_RADIUS = { min: 190, vw: 0.18, max: 340 };
-const STAR_COUNT = 260;
-const TITLE = "ЭКОСИСТЕМА HYDROGENIUM";
+const TITLE_TOP = "ЭКОСИСТЕМА";
+const TITLE_BOTTOM = "HYDROGENIUM";
+const TITLE = `${TITLE_TOP} ${TITLE_BOTTOM}`;
 const NAV_NADH_KEY = "nadh";
 const NAV_CABINETS_KEY = "cabinets";
-
-const splitNavItems = () => ({
-  outer: NAV_ITEMS.slice(0, 5),
-  inner: NAV_ITEMS.slice(5),
-});
-
-const getArcAngles = (count: number, start: number, end: number) => {
-  if (count <= 1) return [(start + end) / 2];
-  const step = (end - start) / (count - 1);
-  return Array.from({ length: count }, (_, idx) => start + step * idx);
-};
-
-const clampPx = (min: number, preferredVw: number, max: number) => {
-  if (typeof window === "undefined") return min;
-  return Math.min(max, Math.max(min, window.innerWidth * preferredVw));
-};
-
-const getArcOffset = (angle: number, radius: number) => {
-  const rad = (angle * Math.PI) / 180;
-  return { x: Math.cos(rad) * radius, y: Math.sin(rad) * radius };
-};
-
-type Star = {
-  id: string;
-  top: number;
-  left: number;
-  size: number;
-  opacity: number;
-  delay: number;
-  duration: number;
-};
-
+const ENABLE_NAV_MAGNET = false;
+const VIDEO_SOURCES = [
+  "/video/kling_20260126_VIDEO_Image1_____610_0.mp4",
+  "/video/ezgif-364514d4efc9a228.mp4",
+];
 const mulberry32 = (seed: number) => {
   let t = seed >>> 0;
   return () => {
@@ -66,205 +41,193 @@ const mulberry32 = (seed: number) => {
   };
 };
 
-const createStars = (count: number, seed: number): Star[] => {
+const createStars = (
+  count: number,
+  seed: number,
+  options: {
+    xMin: number;
+    xMax: number;
+    yMin: number;
+    yMax: number;
+    sizeMin: number;
+    sizeMax: number;
+    opacityMin: number;
+    opacityMax: number;
+  },
+) => {
   const rnd = mulberry32(seed);
-  return Array.from({ length: count }, (_, idx) => ({
-    id: `star-${seed}-${idx}`,
-    top: rnd() * 100,
-    left: rnd() * 100,
-    size: 1 + rnd() * 2.4,
-    opacity: 0.35 + rnd() * 0.55,
-    delay: rnd() * 4.2,
-    duration: 2.8 + rnd() * 3.2,
-  }));
-};
-
-const createStarsInRange = (count: number, seed: number, minTop: number, maxTop: number): Star[] => {
-  const rnd = mulberry32(seed);
-  return Array.from({ length: count }, (_, idx) => ({
-    id: `star-${seed}-${idx}`,
-    top: minTop + rnd() * (maxTop - minTop),
-    left: rnd() * 100,
-    size: 1 + rnd() * 2.8,
-    opacity: 0.45 + rnd() * 0.5,
-    delay: rnd() * 4.2,
-    duration: 2.6 + rnd() * 3.4,
-  }));
-};
-
-const getPulseVars = (index: number): CSSProperties => {
-  const delay = index * 0.24;
-  const duration = 3.4 + (index % 9) * 0.24;
-  return {
-    "--pulse-delay": `${delay.toFixed(2)}s`,
-    "--pulse-duration": `${duration.toFixed(2)}s`,
-  } as CSSProperties;
-};
-
-type ArcRowProps = {
-  items: typeof NAV_ITEMS;
-  angles: number[];
-  radius: number;
-  activePath: string | null;
-  center: { x: number; y: number };
-  className?: string;
-  pulseOffset?: number;
-};
-
-const ArcRow = ({ items, angles, radius, activePath, center, className, pulseOffset = 0 }: ArcRowProps) => {
-  return (
-    <div className={clsx(styles.arcRow, className)}>
-      {items.map((item, idx) => {
-        const isActive = activePath === item.href;
-        const offset = getArcOffset(angles[idx] ?? 0, radius);
-        let x = offset.x;
-        let y = offset.y;
-        if (Number.isNaN(x) || Number.isNaN(y)) {
-          console.warn("Arc position NaN", { angle: angles[idx], radius });
-          x = 0;
-          y = 0;
-        }
-        const left = center.x + x;
-        const top = center.y + y;
-        const pulseVars = getPulseVars(pulseOffset + idx);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-label={item.label}
-            aria-current={isActive ? "page" : undefined}
-            className={clsx(
-              styles.arcItem,
-              styles.navButton,
-              "inline-flex h-12 items-center justify-center rounded-full border border-white/15 bg-white/10 px-4 text-center text-sm font-medium leading-snug text-white/90 backdrop-blur-xl transition hover:border-white/30 hover:bg-white/20 md:h-14 md:px-5 md:text-base",
-              isActive && "border-white/35 bg-white/20 text-white shadow-[0_22px_52px_-20px_rgba(47,183,255,0.8)]",
-            )}
-            style={
-              {
-                left: `${left.toFixed(2)}px`,
-                top: `${top.toFixed(2)}px`,
-                transform: "translate(-50%, -50%) translateY(var(--lift))",
-                ...pulseVars,
-              } as CSSProperties
-            }
-          >
-            {item.label}
-          </Link>
-        );
-      })}
-    </div>
-  );
-};
-
-type ArcNavTwoRowsProps = {
-  className?: string;
-  anchorRef?: React.RefObject<HTMLElement | null>;
-  containerRef?: React.RefObject<HTMLElement | null>;
-};
-
-const ArcNavTwoRows = ({ className, anchorRef, containerRef }: ArcNavTwoRowsProps) => {
-  const pathname = usePathname();
-  const [layout, setLayout] = useState({
-    outer: ARC_OUTER_RADIUS.min,
-    inner: ARC_INNER_RADIUS.min,
-    centerX: 0,
-    centerY: 0,
+  return Array.from({ length: count }).map((_, idx) => {
+    const x = options.xMin + rnd() * (options.xMax - options.xMin);
+    const y = options.yMin + rnd() * (options.yMax - options.yMin);
+    const size = options.sizeMin + rnd() * (options.sizeMax - options.sizeMin);
+    const twinkle = 3 + rnd() * 2.4;
+    const delay = rnd() * 1.6;
+    const floatX = (rnd() - 0.5) * 18;
+    const floatY = (rnd() - 0.5) * 18;
+    const floatDuration = 11 + rnd() * 6;
+    const spread = 18 + rnd() * 16;
+    const influence = 200 + rnd() * 140;
+    const opacity = options.opacityMin + rnd() * (options.opacityMax - options.opacityMin);
+    return {
+      id: `star-auto-${seed}-${idx}`,
+      x: Number(x.toFixed(2)),
+      y: Number(y.toFixed(2)),
+      size: Number(size.toFixed(2)),
+      twinkle: Number(twinkle.toFixed(2)),
+      delay: Number(delay.toFixed(2)),
+      floatX: Number(floatX.toFixed(2)),
+      floatY: Number(floatY.toFixed(2)),
+      floatDuration: Number(floatDuration.toFixed(2)),
+      spread: Number(spread.toFixed(2)),
+      influence: Number(influence.toFixed(2)),
+      opacity: Number(opacity.toFixed(2)),
+    };
   });
-
-  useEffect(() => {
-    const update = () => {
-      const width = window.innerWidth || document.documentElement.clientWidth || 0;
-      const height = window.innerHeight || document.documentElement.clientHeight || 0;
-      const outer = clampPx(ARC_OUTER_RADIUS.min, ARC_OUTER_RADIUS.vw, ARC_OUTER_RADIUS.max);
-      const innerBase = clampPx(ARC_INNER_RADIUS.min, ARC_INNER_RADIUS.vw, ARC_INNER_RADIUS.max);
-      const inner = Math.max(ARC_INNER_RADIUS.min, Math.min(innerBase, outer - 70));
-      let centerX = width * ARC_CENTER_X;
-      let centerY = height * ARC_CENTER_BASE_Y;
-
-      const containerRect = containerRef?.current?.getBoundingClientRect();
-      const anchorRect = anchorRef?.current?.getBoundingClientRect();
-      if (containerRect && anchorRect) {
-        const anchorBottom = anchorRect.bottom - containerRect.top;
-        const minOffsetY = Math.sin((ARC_OUTER_START_DEG * Math.PI) / 180) * outer;
-        const desiredTop = anchorBottom + ARC_TOP_GAP;
-        centerY = desiredTop - minOffsetY;
-        const maxCenter = height - ARC_BOTTOM_MARGIN - outer;
-        if (Number.isFinite(maxCenter)) {
-          centerY = Math.min(centerY, maxCenter);
-        }
-        const minCenter = height * 0.52;
-        if (Number.isFinite(minCenter)) {
-          centerY = Math.max(centerY, minCenter);
-        }
-        centerX = anchorRect.left - containerRect.left + anchorRect.width / 2;
-      }
-
-      setLayout({
-        outer,
-        inner,
-        centerX,
-        centerY,
-      });
-    };
-
-    update();
-    const raf = requestAnimationFrame(update);
-    window.addEventListener("resize", update);
-    const observer = new ResizeObserver(() => update());
-    if (anchorRef?.current) observer.observe(anchorRef.current);
-    if (containerRef?.current) observer.observe(containerRef.current);
-    return () => {
-      window.removeEventListener("resize", update);
-      cancelAnimationFrame(raf);
-      observer.disconnect();
-    };
-  }, [anchorRef, containerRef]);
-
-  const { outer, inner } = splitNavItems();
-  const outerAngles = getArcAngles(outer.length, ARC_OUTER_START_DEG, ARC_OUTER_END_DEG);
-  const innerAngles = getArcAngles(inner.length, ARC_INNER_START_DEG, ARC_INNER_END_DEG);
-  const center = {
-    x: layout.centerX,
-    y: layout.centerY,
-  };
-
-  return (
-    <nav className={clsx(styles.arcShell, className)} aria-label="Main navigation">
-      <ArcRow items={outer} angles={outerAngles} radius={layout.outer} activePath={pathname} center={center} />
-      {inner.length > 0 && (
-        <ArcRow
-          items={inner}
-          angles={innerAngles}
-          radius={layout.inner}
-          activePath={pathname}
-          center={center}
-          className={styles.arcRowInner}
-          pulseOffset={outer.length}
-        />
-      )}
-    </nav>
-  );
 };
 
+const BASE_STARFIELD = [
+  { id: "star-1", x: 6, y: 10, size: 1.6, twinkle: 3.8, delay: 0.2, floatX: 14, floatY: -10, floatDuration: 12, spread: 26, influence: 220, opacity: 0.9 },
+  { id: "star-2", x: 12, y: 22, size: 2.2, twinkle: 4.4, delay: 0.7, floatX: -12, floatY: 16, floatDuration: 14, spread: 28, influence: 260, opacity: 0.85 },
+  { id: "star-3", x: 18, y: 6, size: 1.2, twinkle: 3.4, delay: 1.1, floatX: 10, floatY: 8, floatDuration: 11, spread: 20, influence: 200, opacity: 0.8 },
+  { id: "star-4", x: 24, y: 28, size: 1.9, twinkle: 4.1, delay: 0.4, floatX: -10, floatY: -12, floatDuration: 13, spread: 30, influence: 240, opacity: 0.9 },
+  { id: "star-5", x: 30, y: 14, size: 1.5, twinkle: 3.6, delay: 0.9, floatX: 16, floatY: 10, floatDuration: 12.5, spread: 22, influence: 210, opacity: 0.86 },
+  { id: "star-6", x: 36, y: 32, size: 2.4, twinkle: 4.6, delay: 0.5, floatX: -14, floatY: 12, floatDuration: 15, spread: 34, influence: 280, opacity: 0.9 },
+  { id: "star-7", x: 42, y: 8, size: 1.3, twinkle: 3.2, delay: 1.3, floatX: 12, floatY: -14, floatDuration: 12, spread: 18, influence: 190, opacity: 0.8 },
+  { id: "star-8", x: 48, y: 20, size: 2.1, twinkle: 4.2, delay: 0.6, floatX: -16, floatY: 14, floatDuration: 13.5, spread: 30, influence: 260, opacity: 0.88 },
+  { id: "star-9", x: 54, y: 34, size: 1.4, twinkle: 3.7, delay: 0.8, floatX: 14, floatY: -10, floatDuration: 12.5, spread: 24, influence: 230, opacity: 0.82 },
+  { id: "star-10", x: 60, y: 12, size: 1.8, twinkle: 4.1, delay: 1.4, floatX: -10, floatY: 12, floatDuration: 14.5, spread: 26, influence: 240, opacity: 0.9 },
+  { id: "star-11", x: 66, y: 26, size: 2.6, twinkle: 4.8, delay: 0.3, floatX: 18, floatY: -16, floatDuration: 16, spread: 36, influence: 300, opacity: 0.92 },
+  { id: "star-12", x: 72, y: 8, size: 1.2, twinkle: 3.5, delay: 1.2, floatX: -8, floatY: 10, floatDuration: 11.5, spread: 20, influence: 200, opacity: 0.78 },
+  { id: "star-13", x: 78, y: 18, size: 1.7, twinkle: 4.0, delay: 0.9, floatX: 12, floatY: 14, floatDuration: 13, spread: 24, influence: 230, opacity: 0.86 },
+  { id: "star-14", x: 84, y: 30, size: 2.3, twinkle: 4.5, delay: 0.5, floatX: -16, floatY: -12, floatDuration: 15, spread: 32, influence: 270, opacity: 0.9 },
+  { id: "star-15", x: 90, y: 14, size: 1.4, twinkle: 3.6, delay: 1.6, floatX: 10, floatY: 12, floatDuration: 12.2, spread: 22, influence: 220, opacity: 0.82 },
+  { id: "star-16", x: 16, y: 38, size: 1.6, twinkle: 3.9, delay: 0.4, floatX: -12, floatY: 8, floatDuration: 13.8, spread: 26, influence: 240, opacity: 0.86 },
+  { id: "star-17", x: 26, y: 42, size: 2.0, twinkle: 4.3, delay: 0.8, floatX: 14, floatY: -12, floatDuration: 14.2, spread: 30, influence: 260, opacity: 0.88 },
+  { id: "star-18", x: 38, y: 44, size: 1.3, twinkle: 3.3, delay: 1.1, floatX: -10, floatY: 14, floatDuration: 12.8, spread: 20, influence: 210, opacity: 0.78 },
+  { id: "star-19", x: 50, y: 40, size: 2.2, twinkle: 4.6, delay: 0.5, floatX: 16, floatY: -18, floatDuration: 15.5, spread: 34, influence: 280, opacity: 0.9 },
+  { id: "star-20", x: 62, y: 42, size: 1.5, twinkle: 3.7, delay: 1.0, floatX: -14, floatY: 12, floatDuration: 13.4, spread: 22, influence: 230, opacity: 0.82 },
+  { id: "star-21", x: 74, y: 36, size: 2.1, twinkle: 4.2, delay: 0.6, floatX: 12, floatY: -10, floatDuration: 14.4, spread: 30, influence: 260, opacity: 0.88 },
+  { id: "star-22", x: 82, y: 40, size: 1.4, twinkle: 3.5, delay: 1.3, floatX: -10, floatY: 10, floatDuration: 12.6, spread: 20, influence: 210, opacity: 0.8 },
+  { id: "star-23", x: 92, y: 32, size: 2.0, twinkle: 4.4, delay: 0.7, floatX: 16, floatY: -14, floatDuration: 15, spread: 32, influence: 270, opacity: 0.9 },
+  { id: "star-24", x: 8, y: 26, size: 1.2, twinkle: 3.4, delay: 1.4, floatX: 12, floatY: 8, floatDuration: 11.2, spread: 18, influence: 200, opacity: 0.76 },
+  { id: "star-25", x: 4, y: 4, size: 1.1, twinkle: 3.1, delay: 0.2, floatX: 8, floatY: -8, floatDuration: 11.8, spread: 18, influence: 180, opacity: 0.72 },
+  { id: "star-26", x: 10, y: 16, size: 1.6, twinkle: 3.8, delay: 1.1, floatX: -12, floatY: 10, floatDuration: 13.4, spread: 22, influence: 210, opacity: 0.8 },
+  { id: "star-27", x: 15, y: 3, size: 1.3, twinkle: 3.4, delay: 0.6, floatX: 10, floatY: -12, floatDuration: 12.2, spread: 20, influence: 200, opacity: 0.78 },
+  { id: "star-28", x: 21, y: 12, size: 2.0, twinkle: 4.2, delay: 0.9, floatX: -14, floatY: 12, floatDuration: 14.6, spread: 28, influence: 250, opacity: 0.88 },
+  { id: "star-29", x: 27, y: 6, size: 1.2, twinkle: 3.3, delay: 1.3, floatX: 9, floatY: -10, floatDuration: 11.6, spread: 18, influence: 190, opacity: 0.76 },
+  { id: "star-30", x: 33, y: 18, size: 2.1, twinkle: 4.5, delay: 0.4, floatX: -12, floatY: 14, floatDuration: 15.2, spread: 30, influence: 260, opacity: 0.9 },
+  { id: "star-31", x: 39, y: 4, size: 1.4, twinkle: 3.6, delay: 0.8, floatX: 12, floatY: -8, floatDuration: 12.4, spread: 22, influence: 210, opacity: 0.8 },
+  { id: "star-32", x: 45, y: 14, size: 2.3, twinkle: 4.7, delay: 1.2, floatX: -16, floatY: 16, floatDuration: 16.2, spread: 32, influence: 280, opacity: 0.92 },
+  { id: "star-33", x: 51, y: 2, size: 1.0, twinkle: 3.0, delay: 0.5, floatX: 8, floatY: -6, floatDuration: 11.2, spread: 16, influence: 180, opacity: 0.7 },
+  { id: "star-34", x: 57, y: 10, size: 1.8, twinkle: 4.0, delay: 0.7, floatX: -10, floatY: 12, floatDuration: 13.8, spread: 24, influence: 230, opacity: 0.84 },
+  { id: "star-35", x: 63, y: 6, size: 1.3, twinkle: 3.5, delay: 1.4, floatX: 10, floatY: -10, floatDuration: 12.6, spread: 20, influence: 200, opacity: 0.78 },
+  { id: "star-36", x: 69, y: 16, size: 2.2, twinkle: 4.4, delay: 0.3, floatX: -14, floatY: 14, floatDuration: 15.4, spread: 30, influence: 260, opacity: 0.9 },
+  { id: "star-37", x: 75, y: 4, size: 1.1, twinkle: 3.2, delay: 1.0, floatX: 8, floatY: -8, floatDuration: 11.8, spread: 18, influence: 190, opacity: 0.74 },
+  { id: "star-38", x: 81, y: 12, size: 1.9, twinkle: 4.1, delay: 0.6, floatX: -12, floatY: 12, floatDuration: 14.2, spread: 26, influence: 240, opacity: 0.86 },
+  { id: "star-39", x: 87, y: 6, size: 1.4, twinkle: 3.7, delay: 1.5, floatX: 12, floatY: -12, floatDuration: 12.9, spread: 22, influence: 220, opacity: 0.8 },
+  { id: "star-40", x: 93, y: 16, size: 2.0, twinkle: 4.3, delay: 0.8, floatX: -14, floatY: 16, floatDuration: 15.0, spread: 30, influence: 260, opacity: 0.9 },
+  { id: "star-41", x: 7, y: 20, size: 1.7, twinkle: 4.0, delay: 0.9, floatX: 12, floatY: 10, floatDuration: 13.0, spread: 24, influence: 230, opacity: 0.82 },
+  { id: "star-42", x: 23, y: 20, size: 2.1, twinkle: 4.5, delay: 0.5, floatX: -10, floatY: 12, floatDuration: 14.8, spread: 28, influence: 250, opacity: 0.88 },
+  { id: "star-43", x: 49, y: 20, size: 1.5, twinkle: 3.8, delay: 1.1, floatX: 14, floatY: 10, floatDuration: 13.6, spread: 24, influence: 230, opacity: 0.82 },
+  { id: "star-44", x: 71, y: 20, size: 2.2, twinkle: 4.6, delay: 0.4, floatX: -12, floatY: 12, floatDuration: 15.6, spread: 30, influence: 260, opacity: 0.9 },
+];
+
+const STARFIELD = [
+  ...BASE_STARFIELD,
+  ...createStars(26, 20260126, {
+    xMin: 4,
+    xMax: 96,
+    yMin: 4,
+    yMax: 58,
+    sizeMin: 1.0,
+    sizeMax: 2.8,
+    opacityMin: 0.65,
+    opacityMax: 0.98,
+  }),
+  ...createStars(18, 20260127, {
+    xMin: 8,
+    xMax: 92,
+    yMin: 52,
+    yMax: 74,
+    sizeMin: 0.9,
+    sizeMax: 2.1,
+    opacityMin: 0.45,
+    opacityMax: 0.78,
+  }),
+];
+
+const clamp = (min: number, value: number, max: number) => Math.min(max, Math.max(min, value));
 const CinematicHeroComponent = () => {
-  const navRows = splitNavItems();
-  const mobileItems = [...navRows.outer, ...navRows.inner];
-  const desktopRows = [navRows.inner, navRows.outer].filter((row) => row.length > 0);
-  const stars = useMemo(() => createStars(STAR_COUNT, 202501), []);
-  const starsBottom = useMemo(() => createStarsInRange(180, 202503, 48, 100), []);
   const reduceMotion = useReducedMotion();
+  const perfMode = usePerformanceMode();
+  const lowPerf = perfMode === "low";
+  const pathname = usePathname();
   const router = useRouter();
-  const { startMorph } = useNavMorph();
+  const { startMorph, isMorphing } = useNavMorph();
   const heroRef = useRef<HTMLElement | null>(null);
-  const centerRef = useRef<HTMLDivElement | null>(null);
+  const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
+  const [activeSlot, setActiveSlot] = useState(0);
+  const [videoIndex, setVideoIndex] = useState(0);
+  const [slotSources, setSlotSources] = useState(() => [
+    VIDEO_SOURCES[0],
+    VIDEO_SOURCES[1] ?? VIDEO_SOURCES[0],
+  ]);
+  const swapLockRef = useRef(false);
+  const pendingSwapRef = useRef<{ slot: number; index: number; prevSlot: number } | null>(null);
+  const [videoReady, setVideoReady] = useState(false);
+  const [videoState, setVideoState] = useState<"enter" | "ready" | "exit">("enter");
+  const starRefs = useRef<Map<string, HTMLSpanElement | null>>(new Map());
+  const starOffsetsRef = useRef<Map<string, { x: number; y: number; blur: number }>>(new Map());
+  const starPointerRef = useRef({ x: 0.5, y: 0.25 });
   const navMap = useMemo(() => new Map(NAV_ITEMS.map((item) => [item.key, item])), []);
   const nadhHref = navMap.get(NAV_NADH_KEY)?.href ?? "/nadh";
   const cabinetsHref = navMap.get(NAV_CABINETS_KEY)?.href ?? "/application";
+  const [introReady, setIntroReady] = useState(() => reduceMotion || lowPerf);
+  const starField = useMemo(() => (lowPerf ? BASE_STARFIELD : STARFIELD), [lowPerf]);
+
+  useEffect(() => {
+    if (reduceMotion || lowPerf) {
+      setIntroReady(true);
+      return;
+    }
+    const timeout = window.setTimeout(() => setIntroReady(true), 260);
+    return () => window.clearTimeout(timeout);
+  }, [lowPerf, reduceMotion]);
+
+  useEffect(() => {
+    if (reduceMotion || lowPerf) {
+      setVideoReady(true);
+    }
+  }, [lowPerf, reduceMotion]);
+
+  useEffect(() => {
+    if (reduceMotion || lowPerf) return;
+    const nextIndex = (videoIndex + 1) % VIDEO_SOURCES.length;
+    const inactiveSlot = activeSlot === 0 ? 1 : 0;
+    setSlotSources((prev) => {
+      if (prev[inactiveSlot] === VIDEO_SOURCES[nextIndex]) return prev;
+      const next = [...prev];
+      next[inactiveSlot] = VIDEO_SOURCES[nextIndex];
+      return next;
+    });
+    const nextVideo = videoRefs.current[inactiveSlot];
+    if (nextVideo) {
+      nextVideo.load();
+    }
+  }, [activeSlot, lowPerf, reduceMotion, videoIndex]);
+
+  useEffect(() => {
+    if (reduceMotion || lowPerf) {
+      setVideoState("ready");
+      return;
+    }
+    setVideoState(videoReady ? "ready" : "enter");
+  }, [lowPerf, reduceMotion, videoReady]);
 
   useEffect(() => {
     const root = heroRef.current;
     if (!root) return;
-    if (reduceMotion) {
+    if (reduceMotion || lowPerf) {
       root.style.setProperty("--mx", "0px");
       root.style.setProperty("--my", "0px");
       return;
@@ -296,8 +259,8 @@ const CinematicHeroComponent = () => {
       const rect = root.getBoundingClientRect();
       const dx = (event.clientX - (rect.left + rect.width / 2)) / rect.width;
       const dy = (event.clientY - (rect.top + rect.height / 2)) / rect.height;
-      targetX = dx * 14;
-      targetY = dy * 12;
+      targetX = dx * 7;
+      targetY = dy * 6;
       if (!raf) {
         raf = requestAnimationFrame(tick);
       }
@@ -320,51 +283,204 @@ const CinematicHeroComponent = () => {
       root.removeEventListener("pointerleave", handlePointerLeave);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [reduceMotion]);
+  }, [lowPerf, reduceMotion]);
 
   useEffect(() => {
     const root = heroRef.current;
     if (!root) return;
-    const buttons = Array.from(root.querySelectorAll<HTMLElement>('button[data-nav-origin="home"]'));
-    if (!buttons.length) return;
-    const centerEl = centerRef.current;
-    if (!centerEl) return;
-
-    const update = () => {
-      const centerRect = centerEl.getBoundingClientRect();
-      const centerX = centerRect.left + centerRect.width / 2;
-      const centerY = centerRect.top + centerRect.height / 2;
-      buttons.forEach((button) => {
-        const rect = button.getBoundingClientRect();
-        const bx = rect.left + rect.width / 2;
-        const by = rect.top + rect.height / 2;
-        const dx = centerX - bx;
-        const dy = centerY - by;
-        const length = Math.min(720, Math.hypot(dx, dy));
-        const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-        button.style.setProperty("--line-length", `${length.toFixed(1)}px`);
-        button.style.setProperty("--line-angle", `${angle.toFixed(2)}deg`);
-      });
+    let idleTimer: number | null = null;
+    const setIdle = () => {
+      root.dataset.idle = "true";
     };
-
-    update();
-    const raf = requestAnimationFrame(update);
-    const observer = new ResizeObserver(update);
-    observer.observe(root);
-    observer.observe(centerEl);
-    buttons.forEach((button) => observer.observe(button));
-    window.addEventListener("resize", update);
+    const clearIdle = () => {
+      delete root.dataset.idle;
+    };
+    const schedule = () => {
+      clearIdle();
+      if (idleTimer) window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(setIdle, 5200);
+    };
+    schedule();
+    const handleActivity = () => schedule();
+    window.addEventListener("pointermove", handleActivity, { passive: true });
+    window.addEventListener("keydown", handleActivity);
+    window.addEventListener("wheel", handleActivity, { passive: true });
+    window.addEventListener("touchstart", handleActivity, { passive: true });
     return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", update);
-      observer.disconnect();
+      if (idleTimer) window.clearTimeout(idleTimer);
+      window.removeEventListener("pointermove", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+      window.removeEventListener("wheel", handleActivity);
+      window.removeEventListener("touchstart", handleActivity);
+      delete root.dataset.idle;
     };
   }, []);
+
+  const finalizeSwap = () => {
+    const pending = pendingSwapRef.current;
+    if (!pending) return;
+    const prevVideo = videoRefs.current[pending.prevSlot];
+    if (prevVideo) {
+      prevVideo.pause();
+    }
+    setActiveSlot(pending.slot);
+    setVideoIndex(pending.index);
+    setVideoReady(true);
+    pendingSwapRef.current = null;
+  };
+
+  const requestSwap = () => {
+    if (swapLockRef.current || pendingSwapRef.current) return;
+    if (VIDEO_SOURCES.length < 2) return;
+    swapLockRef.current = true;
+    const nextIndex = (videoIndex + 1) % VIDEO_SOURCES.length;
+    const nextSlot = activeSlot === 0 ? 1 : 0;
+    const nextVideo = videoRefs.current[nextSlot];
+    pendingSwapRef.current = { slot: nextSlot, index: nextIndex, prevSlot: activeSlot };
+
+    if (nextVideo) {
+      nextVideo.currentTime = 0;
+      const playPromise = nextVideo.play();
+      if (playPromise?.catch) {
+        playPromise.catch(() => undefined);
+      }
+      if (!nextVideo.paused && nextVideo.readyState >= 2) {
+        finalizeSwap();
+      } else {
+        window.setTimeout(() => {
+          finalizeSwap();
+        }, 140);
+      }
+    }
+
+    window.setTimeout(() => {
+      swapLockRef.current = false;
+    }, 160);
+  };
 
   useEffect(() => {
     const root = heroRef.current;
     if (!root) return;
     const finePointer = window.matchMedia("(pointer: fine)").matches;
+    if (reduceMotion || lowPerf || !finePointer) {
+      starRefs.current.forEach((node) => {
+        if (!node) return;
+        node.style.setProperty("--star-offset-x", "0px");
+        node.style.setProperty("--star-offset-y", "0px");
+        node.style.setProperty("--star-blur", "0px");
+      });
+      return;
+    }
+
+    let raf = 0;
+
+    const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
+    const updateStars = () => {
+      raf = 0;
+      const rect = root.getBoundingClientRect();
+      const cursor = starPointerRef.current;
+      const cursorX = rect.left + rect.width * cursor.x;
+      const cursorY = rect.top + rect.height * cursor.y;
+      starField.forEach((star) => {
+        const node = starRefs.current.get(star.id);
+        if (!node) return;
+        const baseX = rect.left + rect.width * (star.x / 100);
+        const baseY = rect.top + rect.height * (star.y / 100);
+        const dx = baseX - cursorX;
+        const dy = baseY - cursorY;
+        const dist = Math.hypot(dx, dy);
+        const influence = Math.max(0, 1 - dist / star.influence);
+        const nx = dist > 0 ? dx / dist : 1;
+        const ny = dist > 0 ? dy / dist : 0;
+        const targetX = nx * influence * star.spread;
+        const targetY = ny * influence * star.spread;
+        const targetBlur = influence * 8;
+        const prev = starOffsetsRef.current.get(star.id) ?? { x: 0, y: 0, blur: 0 };
+        const lerp = 0.14;
+        const next = {
+          x: prev.x + (targetX - prev.x) * lerp,
+          y: prev.y + (targetY - prev.y) * lerp,
+          blur: prev.blur + (targetBlur - prev.blur) * lerp,
+        };
+        starOffsetsRef.current.set(star.id, next);
+        node.style.setProperty("--star-offset-x", `${next.x.toFixed(2)}px`);
+        node.style.setProperty("--star-offset-y", `${next.y.toFixed(2)}px`);
+        node.style.setProperty("--star-blur", `${next.blur.toFixed(2)}px`);
+      });
+    };
+
+    const schedule = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(updateStars);
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const rect = root.getBoundingClientRect();
+      const x = clamp01((event.clientX - rect.left) / rect.width);
+      const y = clamp01((event.clientY - rect.top) / rect.height);
+      starPointerRef.current = { x, y };
+      schedule();
+    };
+
+    const handlePointerLeave = () => {
+      starPointerRef.current = { x: 0.5, y: 0.25 };
+      schedule();
+    };
+
+    const handleResize = () => schedule();
+
+    root.addEventListener("pointermove", handlePointerMove, { passive: true });
+    root.addEventListener("pointerleave", handlePointerLeave, { passive: true });
+    window.addEventListener("resize", handleResize);
+    schedule();
+
+    return () => {
+      root.removeEventListener("pointermove", handlePointerMove);
+      root.removeEventListener("pointerleave", handlePointerLeave);
+      window.removeEventListener("resize", handleResize);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [lowPerf, reduceMotion, starField]);
+
+  useEffect(() => {
+    const root = heroRef.current;
+    if (!root) return;
+    const buttons = Array.from(root.querySelectorAll<HTMLElement>('[data-nav-origin="home"]'));
+    if (!buttons.length) return;
+    const finePointer = window.matchMedia("(pointer: fine)").matches;
+    const enableMagnet = ENABLE_NAV_MAGNET && finePointer && !reduceMotion && !lowPerf;
+    let raf = 0;
+    let pendingTarget: HTMLElement | null = null;
+    let pendingMagX = 0;
+    let pendingMagY = 0;
+    let pendingTiltX = 0;
+    let pendingTiltY = 0;
+
+    const resetButton = (button: HTMLElement) => {
+      button.style.setProperty("--mag-x", "0px");
+      button.style.setProperty("--mag-y", "0px");
+      button.style.setProperty("--tilt-x", "0deg");
+      button.style.setProperty("--tilt-y", "0deg");
+    };
+
+    const applyMagnet = () => {
+      raf = 0;
+      if (!pendingTarget) return;
+      pendingTarget.style.setProperty("--mag-x", `${pendingMagX.toFixed(2)}px`);
+      pendingTarget.style.setProperty("--mag-y", `${pendingMagY.toFixed(2)}px`);
+      pendingTarget.style.setProperty("--tilt-x", `${pendingTiltX.toFixed(2)}deg`);
+      pendingTarget.style.setProperty("--tilt-y", `${pendingTiltY.toFixed(2)}deg`);
+    };
+
+    const schedule = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(applyMagnet);
+    };
+
+    if (!enableMagnet) {
+      buttons.forEach(resetButton);
+    }
 
     const setNavHover = (key?: string) => {
       if (key) {
@@ -377,58 +493,68 @@ const CinematicHeroComponent = () => {
     };
 
     const handlePointerOver = (event: PointerEvent) => {
-      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('button[data-nav-origin="home"]');
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-nav-origin="home"]');
       if (!target) return;
       setNavHover(target.dataset.navKey);
     };
 
     const handlePointerOut = (event: PointerEvent) => {
-      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('button[data-nav-origin="home"]');
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-nav-origin="home"]');
       if (!target) return;
       if (target.contains(event.relatedTarget as Node)) return;
       setNavHover();
-      target.style.setProperty("--mag-x", "0px");
-      target.style.setProperty("--mag-y", "0px");
+      resetButton(target);
+      pendingTarget = null;
     };
 
     const handleFocusIn = (event: FocusEvent) => {
-      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('button[data-nav-origin="home"]');
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-nav-origin="home"]');
       if (!target) return;
       setNavHover(target.dataset.navKey);
     };
 
     const handleFocusOut = (event: FocusEvent) => {
-      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('button[data-nav-origin="home"]');
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-nav-origin="home"]');
       if (!target) return;
       if (target.contains(event.relatedTarget as Node)) return;
       setNavHover();
+      resetButton(target);
     };
 
     const handlePointerMove = (event: PointerEvent) => {
-      if (!finePointer) return;
-      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('button[data-nav-origin="home"]');
+      if (!enableMagnet) return;
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-nav-origin="home"]');
       if (!target) return;
       const rect = target.getBoundingClientRect();
       const dx = (event.clientX - (rect.left + rect.width / 2)) / rect.width;
       const dy = (event.clientY - (rect.top + rect.height / 2)) / rect.height;
-      target.style.setProperty("--mag-x", `${(dx * 4).toFixed(2)}px`);
-      target.style.setProperty("--mag-y", `${(dy * 4).toFixed(2)}px`);
+      pendingTarget = target;
+      pendingMagX = dx * 4;
+      pendingMagY = dy * 4;
+      pendingTiltX = clamp(-6, -dy * 12, 6);
+      pendingTiltY = clamp(-10, dx * 20, 10);
+      schedule();
     };
 
     root.addEventListener("pointerover", handlePointerOver);
     root.addEventListener("pointerout", handlePointerOut);
-    root.addEventListener("pointermove", handlePointerMove, { passive: true });
+    if (enableMagnet) {
+      root.addEventListener("pointermove", handlePointerMove, { passive: true });
+    }
     root.addEventListener("focusin", handleFocusIn);
     root.addEventListener("focusout", handleFocusOut);
 
     return () => {
       root.removeEventListener("pointerover", handlePointerOver);
       root.removeEventListener("pointerout", handlePointerOut);
-      root.removeEventListener("pointermove", handlePointerMove);
+      if (enableMagnet) {
+        root.removeEventListener("pointermove", handlePointerMove);
+      }
       root.removeEventListener("focusin", handleFocusIn);
       root.removeEventListener("focusout", handleFocusOut);
+      if (raf) cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [lowPerf, reduceMotion]);
 
   const handleSideHover = (key?: string) => {
     const root = heroRef.current;
@@ -440,7 +566,7 @@ const CinematicHeroComponent = () => {
     }
   };
 
-  const handleRipple = (event: PointerEvent<HTMLElement>) => {
+  const handleRipple = (event: ReactPointerEvent<HTMLElement>) => {
     const target = event.currentTarget;
     target.dataset.pressed = "true";
     window.setTimeout(() => {
@@ -451,6 +577,7 @@ const CinematicHeroComponent = () => {
   const handleDirectNav = (event: MouseEvent<HTMLElement>, key: string, href: string) => {
     if (event.defaultPrevented) return;
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (href === pathname) return;
     event.preventDefault();
     const item = navMap.get(key);
     if (item && startMorph) {
@@ -461,227 +588,209 @@ const CinematicHeroComponent = () => {
   };
 
   const hero = (
-    <section ref={heroRef} data-hero-root className={styles.heroFixed} aria-label="HYDROGENIUM hero section">
-      <div className={styles.backgroundLayer} aria-hidden />
-      <div className={styles.starsLayer} aria-hidden>
-        {stars.map((star) => (
+    <section
+      ref={heroRef}
+      data-hero-root
+      data-hero-intro={introReady ? "true" : "false"}
+      data-video-state={videoState}
+      data-nav-morph={isMorphing ? "true" : "false"}
+      className={styles.heroRoot}
+      aria-label="HYDROGENIUM hero section"
+    >
+      <div className={styles.videoWrap} aria-hidden>
+        {[0, 1].map((slot) => {
+          const isActive = slot === activeSlot;
+          return (
+            <video
+              key={`hero-video-${slot}`}
+              ref={(node) => {
+                videoRefs.current[slot] = node;
+              }}
+              className={styles.heroVideo}
+              data-active={isActive ? "true" : "false"}
+              autoPlay={isActive}
+              muted
+              playsInline
+              preload="auto"
+              disablePictureInPicture
+              controls={false}
+              src={slotSources[slot]}
+              onCanPlay={() => {
+                if (slot === activeSlot) setVideoReady(true);
+              }}
+              onEnded={() => {
+                if (slot !== activeSlot) return;
+                requestSwap();
+              }}
+              onPlaying={() => {
+                const pending = pendingSwapRef.current;
+                if (!pending || pending.slot !== slot) return;
+                finalizeSwap();
+              }}
+            />
+          );
+        })}
+        <div className={styles.videoBloom} />
+        <div className={styles.videoOverlay} />
+        <div className={styles.videoVignette} />
+      </div>
+
+      <div className={styles.starField} aria-hidden>
+        {starField.map((star) => (
           <span
             key={star.id}
-            className={styles.star}
+            ref={(node) => {
+              if (!node) {
+                starRefs.current.delete(star.id);
+                return;
+              }
+              starRefs.current.set(star.id, node);
+            }}
+            className={styles.starParticle}
             style={
               {
-                top: `${star.top.toFixed(2)}%`,
-                left: `${star.left.toFixed(2)}%`,
-                width: `${star.size.toFixed(2)}px`,
-                height: `${star.size.toFixed(2)}px`,
-                opacity: star.opacity,
-                "--twinkle-delay": `${star.delay.toFixed(2)}s`,
-                "--twinkle-duration": `${star.duration.toFixed(2)}s`,
-              } as CSSProperties
-            }
-          />
-        ))}
-        {starsBottom.map((star) => (
-          <span
-            key={star.id}
-            className={`${styles.star} ${styles.starBottom}`}
-            style={
-              {
-                top: `${star.top.toFixed(2)}%`,
-                left: `${star.left.toFixed(2)}%`,
-                width: `${star.size.toFixed(2)}px`,
-                height: `${star.size.toFixed(2)}px`,
-                opacity: star.opacity,
-                "--twinkle-delay": `${star.delay.toFixed(2)}s`,
-                "--twinkle-duration": `${star.duration.toFixed(2)}s`,
+                "--star-x": `${star.x}%`,
+                "--star-y": `${star.y}%`,
+                "--star-size": `${star.size}px`,
+                "--star-opacity": `${star.opacity}`,
+                "--star-twinkle-duration": `${star.twinkle}s`,
+                "--star-twinkle-delay": `${star.delay}s`,
+                "--star-float-x": `${star.floatX}px`,
+                "--star-float-y": `${star.floatY}px`,
+                "--star-float-duration": `${star.floatDuration}s`,
               } as CSSProperties
             }
           />
         ))}
       </div>
-      <div className={styles.decorLayer} aria-hidden>
-        <div className={styles.horizonGlow} />
-        <div className={styles.groundGrid} />
-        <div className={styles.baseGlow} />
-      </div>
 
-      <Link
-        href={nadhHref}
-        className={styles.sideLinkLeft}
-        aria-label="NADH CLINIC"
-        onPointerEnter={() => handleSideHover(NAV_NADH_KEY)}
-        onPointerLeave={() => handleSideHover()}
-        onFocus={() => handleSideHover(NAV_NADH_KEY)}
-        onBlur={() => handleSideHover()}
-        onPointerDown={handleRipple}
-        onClick={(event) => handleDirectNav(event, NAV_NADH_KEY, nadhHref)}
-      >
-        <div className={styles.sideObjectLeft} aria-hidden="true">
-          <span className={styles.capsuleCore} />
-        </div>
-        <div className={styles.sideLabel}>NADH CLINIC</div>
-      </Link>
+      {!lowPerf && <CursorTrail targetRef={heroRef} className={styles.cursorTrail} />}
+      {!lowPerf && <div className={styles.heroBreath} aria-hidden />}
 
-      <Link
-        href={cabinetsHref}
-        className={styles.sideLinkRight}
-        aria-label="Эпигенетическая коррекция"
-        onPointerEnter={() => handleSideHover(NAV_CABINETS_KEY)}
-        onPointerLeave={() => handleSideHover()}
-        onFocus={() => handleSideHover(NAV_CABINETS_KEY)}
-        onBlur={() => handleSideHover()}
-        onPointerDown={handleRipple}
-        onClick={(event) => handleDirectNav(event, NAV_CABINETS_KEY, cabinetsHref)}
-      >
-        <div className={styles.sideObjectRight} aria-hidden="true">
-          <svg className={styles.starSvg} viewBox="0 0 200 200" role="presentation" aria-hidden="true">
-            <defs>
-              <linearGradient id="heroStarStroke" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="rgba(150,220,255,0.85)" />
-                <stop offset="100%" stopColor="rgba(80,180,255,0.2)" />
-              </linearGradient>
-              <radialGradient id="heroStarGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="rgba(160,235,255,0.8)" />
-                <stop offset="100%" stopColor="rgba(60,170,255,0)" />
-              </radialGradient>
-            </defs>
-            <circle cx="100" cy="100" r="72" fill="url(#heroStarGlow)" />
-            <polygon
-              points="100,16 178,150 22,150"
-              fill="none"
-              stroke="url(#heroStarStroke)"
-              strokeWidth="2.2"
-              strokeLinejoin="round"
-            />
-            <polygon
-              points="100,184 178,50 22,50"
-              fill="none"
-              stroke="url(#heroStarStroke)"
-              strokeWidth="2.2"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-        <div className={styles.sideLabelRu}>
-          ЭПИГЕНЕТИЧЕСКАЯ
-          <br />
-          КОРРЕКЦИЯ
-        </div>
-      </Link>
-
-      <div className={styles.scene}>
-        <div ref={centerRef} className={styles.heroCenter} aria-hidden />
+      <div className={styles.uiLayer}>
         <div className={styles.orbitTitleWrap} aria-label={TITLE}>
           <div className={styles.orbitTitleParallax} aria-hidden="true">
-            <svg className={styles.orbitTitleSvg} viewBox="0 0 1200 420" role="img" aria-hidden="true">
-            <defs>
-              <path id="orbitTitlePath" d="M 120 260 C 300 120 900 120 1080 260" />
-              <path id="orbitRingOuter" d="M 140 278 C 320 140 880 140 1060 278" />
-              <path id="orbitRingInner" d="M 170 300 C 340 176 860 176 1030 300" />
-            </defs>
-            <g className={styles.orbitTitleOrbits} aria-hidden="true">
-              <use href="#orbitRingOuter" className={styles.orbitTitleRing} />
-              <use href="#orbitRingInner" className={clsx(styles.orbitTitleRing, styles.orbitTitleRingInner)} />
-            </g>
-            <text className={styles.orbitTitleText}>
-              <textPath href="#orbitTitlePath" startOffset="50%" textAnchor="middle">
-                {TITLE}
-              </textPath>
-            </text>
-            <use href="#orbitTitlePath" className={styles.orbitTitlePath} />
-          </svg>
-          </div>
-        </div>
-        <div className={styles.treeStage}>
-          <div className={styles.treeSlot}>
-            <div className={styles.treeSpin} aria-hidden />
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.rootTendrils} aria-hidden="true">
-        <svg className={styles.rootSvg} viewBox="0 0 1200 360" role="presentation" aria-hidden="true">
-          <path className={styles.rootLine} d="M 580 6 C 564 80 548 138 532 196 C 510 258 474 298 414 340" />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAlt)}
-            d="M 620 6 C 642 92 678 154 708 212 C 738 272 772 310 834 340"
-          />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
-            d="M 560 12 C 536 112 506 172 484 232 C 456 294 430 320 370 352"
-          />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
-            d="M 640 12 C 664 112 694 172 716 232 C 744 294 770 320 830 352"
-          />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAlt)}
-            d="M 540 2 C 520 68 494 128 464 188 C 430 250 388 292 324 330"
-          />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAlt)}
-            d="M 660 2 C 680 68 706 128 736 188 C 770 250 812 292 876 330"
-          />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
-            d="M 520 0 C 496 50 470 108 438 158 C 404 210 356 250 300 300"
-          />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
-            d="M 680 0 C 704 50 730 108 762 158 C 796 210 844 250 900 300"
-          />
-          <path className={styles.rootLine} d="M 595 10 C 586 90 580 150 574 210 C 564 270 536 310 498 350" />
-          <path className={styles.rootLine} d="M 605 10 C 614 90 620 150 626 210 C 636 270 664 310 702 350" />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
-            d="M 550 14 C 516 108 478 168 432 226 C 392 278 350 310 288 342"
-          />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAltTwo)}
-            d="M 650 14 C 684 108 722 168 768 226 C 808 278 850 310 912 342"
-          />
-          <path
-            className={clsx(styles.rootLine, styles.rootLineAlt)}
-            d="M 620 6 C 614 118 616 178 618 238 C 620 298 628 324 648 352"
-          />
-        </svg>
-      </div>
-
-      <div className={styles.navDock}>
-        <nav className={clsx(styles.desktopNav, "hidden lg:flex")} aria-label="Main navigation">
-          {desktopRows.map((row, rowIndex) => (
-            <div key={`desktop-row-${rowIndex}`} className={styles.desktopRow}>
-              <NavPills
-                variant="homeDock"
-                items={row}
-                as="fragment"
-                itemClassName={clsx(
-                  styles.navButton,
-                  styles.desktopButton,
-                  "inline-flex h-[52px] items-center justify-center rounded-full px-6 text-center text-[15px] font-medium text-white/90 backdrop-blur-xl",
-                )}
-                activeClassName="text-white shadow-[0_22px_52px_-20px_rgba(47,183,255,0.8)]"
-                getItemStyle={(_, itemIndex) => getPulseVars(rowIndex * 6 + itemIndex)}
-              />
+            <div className={styles.titleOrbits} aria-hidden="true">
+              <svg className={styles.titleOrbitSvg} viewBox="0 0 600 220" role="presentation" aria-hidden="true">
+                <defs>
+                  <linearGradient id="heroOrbitGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="rgba(126, 231, 255, 0.15)" />
+                    <stop offset="45%" stopColor="rgba(126, 231, 255, 0.8)" />
+                    <stop offset="100%" stopColor="rgba(60, 203, 255, 0.2)" />
+                  </linearGradient>
+                </defs>
+                <g className={styles.titleOrbitGroup}>
+                  <ellipse className={styles.titleOrbit} cx="300" cy="110" rx="230" ry="72" />
+                  <ellipse className={clsx(styles.titleOrbit, styles.titleOrbitAlt)} cx="300" cy="110" rx="260" ry="92" />
+                </g>
+                <g className={clsx(styles.titleOrbitGroup, styles.titleOrbitGroupAlt)}>
+                  <ellipse className={clsx(styles.titleOrbit, styles.titleOrbitThin)} cx="300" cy="110" rx="190" ry="56" />
+                </g>
+              </svg>
             </div>
-          ))}
-        </nav>
-
-        <nav className={clsx(styles.mobileNav, "lg:hidden")} aria-label="Main navigation">
-          <div className={clsx("flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 pt-1", styles.noScrollbar)}>
-            <NavPills
-              variant="homeDock"
-              items={mobileItems}
-              as="fragment"
-              itemClassName={clsx(
-                styles.navButton,
-                "inline-flex h-10 min-w-[150px] shrink-0 snap-center items-center justify-center whitespace-nowrap rounded-full px-4 text-[12px] font-medium text-white/90 backdrop-blur-xl",
-              )}
-              getItemStyle={(_, itemIndex) => getPulseVars(itemIndex)}
-            />
+            <div className={styles.titlePlanetOrbit} aria-hidden="true" />
+            <div className={styles.titlePlanetTrack} aria-hidden="true">
+              <div className={styles.titlePlanetSpin}>
+                <span className={styles.titlePlanet} />
+              </div>
+            </div>
+            <h1 className={styles.titleStack}>
+              <span className={styles.titleLine} data-text={TITLE_TOP}>
+                {TITLE_TOP}
+              </span>
+              <span className={clsx(styles.titleLine, styles.titleLineAccent)} data-text={TITLE_BOTTOM}>
+                {TITLE_BOTTOM}
+              </span>
+            </h1>
           </div>
-        </nav>
+        </div>
+
+        <Link
+          href={nadhHref}
+          className={styles.sideLinkLeft}
+          aria-label="NADH CLINIC"
+          data-ui-sound="nav"
+          onPointerEnter={() => handleSideHover(NAV_NADH_KEY)}
+          onPointerLeave={() => handleSideHover()}
+          onFocus={() => handleSideHover(NAV_NADH_KEY)}
+          onBlur={() => handleSideHover()}
+          onPointerDown={handleRipple}
+          onClick={(event) => handleDirectNav(event, NAV_NADH_KEY, nadhHref)}
+        >
+          <div className={styles.sideObjectLeft} aria-hidden="true">
+            <span className={styles.capsuleCore} />
+          </div>
+          <div className={styles.sideLabel}>NADH CLINIC</div>
+        </Link>
+
+        <Link
+          href={cabinetsHref}
+          className={styles.sideLinkRight}
+          aria-label="Эпигенетическая коррекция"
+          data-ui-sound="nav"
+          onPointerEnter={() => handleSideHover(NAV_CABINETS_KEY)}
+          onPointerLeave={() => handleSideHover()}
+          onFocus={() => handleSideHover(NAV_CABINETS_KEY)}
+          onBlur={() => handleSideHover()}
+          onPointerDown={handleRipple}
+          onClick={(event) => handleDirectNav(event, NAV_CABINETS_KEY, cabinetsHref)}
+        >
+          <div className={styles.sideObjectRight} aria-hidden="true">
+            <svg className={styles.starSvg} viewBox="0 0 200 200" role="presentation" aria-hidden="true">
+              <defs>
+                <linearGradient id="heroStarStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="rgba(150,220,255,0.85)" />
+                  <stop offset="100%" stopColor="rgba(80,180,255,0.2)" />
+                </linearGradient>
+                <radialGradient id="heroStarGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="rgba(160,235,255,0.8)" />
+                  <stop offset="100%" stopColor="rgba(60,170,255,0)" />
+                </radialGradient>
+              </defs>
+              <circle cx="100" cy="100" r="72" fill="url(#heroStarGlow)" />
+              <polygon
+                className={styles.starStroke}
+                points="100,16 178,150 22,150"
+                fill="none"
+                stroke="url(#heroStarStroke)"
+                strokeWidth="2.2"
+                strokeLinejoin="round"
+              />
+              <polygon
+                className={styles.starStroke}
+                points="100,184 178,50 22,50"
+                fill="none"
+                stroke="url(#heroStarStroke)"
+                strokeWidth="2.2"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <div className={styles.sideLabelRu}>
+            ЭПИГЕНЕТИЧЕСКАЯ
+            <br />
+            КОРРЕКЦИЯ
+          </div>
+        </Link>
+
       </div>
+      <nav className={styles.navDock} role="navigation" aria-label="Primary navigation">
+        {!lowPerf && <div className={styles.navMorphPulse} aria-hidden />}
+        {!lowPerf && <div className={styles.navDockWires} aria-hidden />}
+        <NavPills
+          variant="homeDock"
+          items={NAV_ITEMS}
+          className={styles.navDockItems}
+          itemClassName={clsx(
+            styles.navButton,
+            styles.homeTile,
+            styles.dockButton,
+            "inline-flex h-12 min-w-[130px] max-w-[210px] items-center justify-center px-4 text-center text-[12px] font-semibold leading-snug text-white/95",
+          )}
+          activeClassName={clsx(styles.navButtonActive, "text-white")}
+          ariaLabel="Primary navigation"
+        />
+      </nav>
     </section>
   );
 

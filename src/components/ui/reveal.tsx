@@ -15,10 +15,10 @@ type RevealProps = {
 };
 
 const directionMap: Record<Direction, { x?: number; y?: number }> = {
-  up: { y: 60 },
-  down: { y: -60 },
-  left: { x: 60 },
-  right: { x: -60 },
+  up: { y: 40 },
+  down: { y: -40 },
+  left: { x: 40 },
+  right: { x: -40 },
 };
 
 export const Reveal = ({ children, className, direction = "up", delay = 0, cascade = false }: RevealProps) => {
@@ -29,19 +29,19 @@ export const Reveal = ({ children, className, direction = "up", delay = 0, casca
   const baseOffset = directionMap[direction];
 
   const transition = reduceMotion
-    ? { duration: 0.01 }
-    : {
-        duration: 0.8,
-        ease: "easeOut",
-        delay,
-        type: "spring",
-        bounce: 0.18,
-      };
+      ? { duration: 0.01 }
+      : {
+          duration: 0.7,
+          ease: [0.22, 1, 0.36, 1],
+          delay,
+          type: "spring",
+          bounce: 0.12,
+        };
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, filter: "blur(10px)", ...baseOffset }}
+      initial={{ opacity: 0, filter: "blur(8px)", ...baseOffset }}
       animate={inView ? { opacity: 1, filter: "blur(0px)", x: 0, y: 0 } : undefined}
       transition={transition}
       className={clsx(cascade && "space-y-3", className)}

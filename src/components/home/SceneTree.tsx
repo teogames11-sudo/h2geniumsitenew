@@ -83,6 +83,13 @@ const TreeModel = ({ onReady }: { onReady?: () => void }) => {
   const cameraLerpRef = useRef(0);
   const readyAnnouncedRef = useRef(false);
 
+  const updateBaseGroupPos = () => {
+    const isMobile = window.innerWidth < 768;
+    baseGroupPos.current.x = isMobile ? 0 : 0.18;
+    baseGroupPos.current.y = isMobile ? -0.52 : -0.58;
+    baseGroupPos.current.z = 0;
+  };
+
   const bounds = useMemo(() => {
     const box = new Box3().setFromObject(scene);
     const size = box.getSize(new Vector3());
@@ -114,6 +121,7 @@ const TreeModel = ({ onReady }: { onReady?: () => void }) => {
   }, [bounds.maxDim]);
 
   useLayoutEffect(() => {
+    updateBaseGroupPos();
     const sceneData = scene.userData as { __centered?: boolean };
     if (!sceneData.__centered) {
       scene.position.sub(bounds.center);
@@ -144,6 +152,15 @@ const TreeModel = ({ onReady }: { onReady?: () => void }) => {
     introDoneRef.current = false;
     readyAnnouncedRef.current = false;
   }, [fadeTargets]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      updateBaseGroupPos();
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const handleMove = (event: MouseEvent) => {

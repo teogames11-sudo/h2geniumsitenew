@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useLayoutEffect, useRef } from "react";
 
 type HomeFullscreenProps = {
   children: ReactNode;
@@ -9,7 +9,7 @@ type HomeFullscreenProps = {
 export const HomeFullscreen = ({ children }: HomeFullscreenProps) => {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
     const body = document.body;
     root.classList.add("home-fullscreen");
@@ -48,7 +48,15 @@ export const HomeFullscreen = ({ children }: HomeFullscreenProps) => {
   }, []);
 
   return (
-    <div ref={wrapperRef} className="fixed inset-0 z-10 w-screen h-[100dvh] overflow-hidden">
+    <div
+      ref={wrapperRef}
+      className="fixed left-1/2 top-0 z-10 min-h-[100svh] min-h-[100dvh] overflow-hidden"
+      style={{
+        width: "calc(100vw / var(--app-scale))",
+        height: "calc(100vh / var(--app-scale))",
+        transform: "translateX(-50%)",
+      }}
+    >
       {children}
     </div>
   );

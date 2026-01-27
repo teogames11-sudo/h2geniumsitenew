@@ -22,12 +22,21 @@ export type ProductContent = {
   images: string[];
   documents: { title: string; url: string }[];
   category?: string;
+  tags?: string[];
+  specs?: { label: string; value: string; note?: string }[];
+  highlights?: string[];
+  model?: string;
+  video?: string;
 };
 
 export type ArticleContent = {
   url: string;
   title: string;
   excerpt?: string;
+  tags?: string[];
+  category?: string;
+  type?: string;
+  date?: string;
 };
 
 export type DocumentLink = {

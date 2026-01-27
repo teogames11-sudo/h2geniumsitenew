@@ -1,0 +1,70 @@
+.toggle {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(120, 220, 255, 0.35);
+  background: rgba(8, 16, 28, 0.72);
+  color: rgba(230, 248, 255, 0.92);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease, color 200ms ease;
+  box-shadow: 0 6px 18px rgba(6, 12, 20, 0.6);
+}
+
+.toggle:hover,
+.toggle:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(140, 235, 255, 0.6);
+  color: #f4fbff;
+  box-shadow: 0 0 18px rgba(120, 220, 255, 0.35), 0 10px 22px rgba(4, 8, 14, 0.6);
+}
+
+.label {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.mode {
+  font-weight: 700;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(120, 220, 255, 0.75);
+  box-shadow: 0 0 10px rgba(120, 220, 255, 0.7);
+}
+
+.low .dot {
+  background: rgba(150, 170, 190, 0.7);
+  box-shadow: none;
+}
+
+.low {
+  color: rgba(210, 225, 240, 0.82);
+}
+
+.high .dot {
+  background: rgba(120, 255, 200, 0.9);
+  box-shadow: 0 0 12px rgba(100, 255, 200, 0.7);
+}
+
+@media (max-width: 640px) {
+  .toggle {
+    left: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    font-size: 10px;
+    padding: 7px 10px;
+  }
+}
