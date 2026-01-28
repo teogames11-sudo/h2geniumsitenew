@@ -1,0 +1,37 @@
+.blobContainer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease;
+  --blob-x: 0px;
+  --blob-y: 0px;
+}
+
+.blobContainer[data-active="true"] {
+  opacity: 1;
+}
+
+.blobMain {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+  cursor: default;
+}
+
+.blob {
+  position: absolute;
+  will-change: transform;
+  transform: translate3d(var(--blob-x), var(--blob-y), 0) translate(-50%, -50%);
+}
+
+.innerDot {
+  position: absolute;
+}

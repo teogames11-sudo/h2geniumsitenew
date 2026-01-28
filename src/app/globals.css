@@ -313,18 +313,47 @@ a {
   transform: scale(1.02);
 }
 
+.site-header .header-nav-line .gooey-nav-link {
+  opacity: 0;
+  transform: translateY(-18px);
+  animation: headerNavReveal 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--nav-index, 0) * 90ms);
+}
+
+.site-header .header-nav-line .gooey-nav-link[aria-current="page"] {
+  color: #ffffff;
+  text-shadow: 0 0 22px rgba(140, 220, 255, 0.75), var(--nav-pill-text-shadow);
+  transform: translateY(-1px);
+}
+
+.site-header .header-nav-line .gooey-nav-link[aria-current="page"]::before {
+  opacity: 1;
+  background:
+    linear-gradient(160deg, rgba(170, 235, 255, 0.9), rgba(22, 78, 150, 0.55) 65%),
+    radial-gradient(120% 140% at 80% 20%, rgba(210, 245, 255, 0.5), rgba(255, 255, 255, 0) 70%),
+    var(--nav-pill-bg);
+  border-color: rgba(190, 245, 255, 0.95);
+  box-shadow: 0 0 32px rgba(140, 220, 255, 0.85), var(--nav-pill-shadow-hover);
+}
+
+.site-header .header-nav-line .gooey-nav-link[aria-current="page"]::after {
+  opacity: 0.9;
+  filter: blur(10px);
+  transform: scale(1.05);
+}
+
 .gooey-nav-container {
   position: relative;
   display: inline-flex;
   align-items: center;
   isolation: isolate;
-  --gooey-pill: rgba(255, 255, 255, 0.52);
+  --gooey-pill: linear-gradient(135deg, rgba(60, 140, 255, 0.85), rgba(130, 70, 255, 0.75));
   --gooey-text: #0a0f14;
-  --gooey-shadow: 0 18px 40px -18px rgba(255, 255, 255, 0.45);
-  --color-1: rgba(255, 255, 255, 0.95);
-  --color-2: rgba(255, 255, 255, 0.85);
-  --color-3: rgba(255, 255, 255, 0.75);
-  --color-4: rgba(255, 255, 255, 0.9);
+  --gooey-shadow: 0 20px 46px -24px rgba(70, 90, 200, 0.45);
+  --color-1: rgba(90, 170, 255, 0.85);
+  --color-2: rgba(140, 90, 255, 0.8);
+  --color-3: rgba(80, 150, 255, 0.75);
+  --color-4: rgba(160, 100, 255, 0.75);
 }
 
 .gooey-nav-container nav {
@@ -372,29 +401,36 @@ a {
 }
 
 .gooey-nav-container .effect.filter {
-  filter: blur(9px) contrast(60);
+  filter: blur(10px) contrast(112) saturate(1.02);
   mix-blend-mode: screen;
-  opacity: 0.55;
+  opacity: 0.6;
 }
 
 .gooey-nav-container .effect.filter::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -42px;
   z-index: -2;
-  background: transparent;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(110, 150, 255, 0.35), rgba(110, 150, 255, 0) 70%);
   opacity: 0;
+}
+
+.gooey-nav-container .effect.filter.active::before {
+  opacity: 0.65;
 }
 
 .gooey-nav-container .effect.filter::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--gooey-pill);
+  background:
+    radial-gradient(120% 120% at 50% 35%, rgba(120, 160, 255, 0.35), rgba(120, 160, 255, 0) 65%),
+    var(--gooey-pill);
   transform: scale(0);
   opacity: 0;
   z-index: -1;
-  border-radius: 100vw;
+  border-radius: var(--nav-pill-radius);
   box-shadow: var(--gooey-shadow);
 }
 
@@ -404,8 +440,8 @@ a {
 
 @keyframes gooey-pill {
   to {
-    transform: scale(1);
-    opacity: 0.55;
+    transform: scale(1.03);
+    opacity: 0.5;
   }
 }
 
@@ -413,10 +449,11 @@ a {
 .gooey-nav-container .gooey-point {
   display: block;
   opacity: 0;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 100%;
   transform-origin: center;
+  filter: blur(0.2px);
 }
 
 .gooey-nav-container .gooey-particle {
@@ -431,6 +468,27 @@ a {
   background: var(--color);
   opacity: 1;
   animation: gooey-point calc(var(--time)) ease 1 -350ms;
+  box-shadow: 0 0 10px rgba(90, 140, 255, 0.55);
+  mix-blend-mode: screen;
+}
+
+.gooey-nav-link[data-gooey-hot="true"] {
+  filter: brightness(1.08) saturate(1.12);
+}
+
+.gooey-nav-link[data-gooey-hot="true"]::before {
+  opacity: 1;
+  box-shadow: 0 0 24px rgba(120, 170, 255, 0.55), var(--nav-pill-shadow-hover);
+}
+
+.gooey-nav-link[data-gooey-hot="true"]::after {
+  opacity: 0.9;
+  filter: blur(10px);
+  transform: scale(1.05);
+}
+
+.gooey-nav-link[data-gooey-hot="true"] :is(.homeTileInner, .headerPillLabel) {
+  text-shadow: 0 0 18px rgba(90, 140, 255, 0.55), var(--nav-pill-text-shadow);
 }
 
 @keyframes gooey-particle {
@@ -464,28 +522,31 @@ a {
     animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
   }
 
-  25% {
-    transform: scale(calc(var(--scale) * 0.25));
-  }
-
-  38% {
+  22% {
+    transform: scale(calc(var(--scale) * 0.35));
     opacity: 1;
   }
 
-  65% {
-    transform: scale(var(--scale));
+  60% {
+    transform: scale(calc(var(--scale) * 1.12));
     opacity: 1;
     animation-timing-function: ease;
-  }
-
-  85% {
-    transform: scale(var(--scale));
-    opacity: 1;
   }
 
   100% {
     transform: scale(0);
     opacity: 0;
+  }
+}
+
+@keyframes headerNavReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -672,6 +733,12 @@ a {
   .spark,
   .nadh-glow {
     animation: none !important;
+  }
+
+  .site-header .header-nav-line .gooey-nav-link {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: translateY(0) !important;
   }
 }
 

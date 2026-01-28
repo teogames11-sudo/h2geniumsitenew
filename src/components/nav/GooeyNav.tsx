@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent, MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import type { FocusEvent, KeyboardEvent, MouseEvent, PointerEvent } from "react";
 import type { NavItem } from "@/config/nav";
 import { useNavMorph } from "@/components/transitions/NavMorphProvider";
 
@@ -62,6 +62,9 @@ export const GooeyNav = ({
   const textRef = useRef<HTMLSpanElement | null>(null);
   const timeoutsRef = useRef<number[]>([]);
   const skipClickRef = useRef(false);
+  const hoverIndexRef = useRef<number | null>(null);
+  const hotTimeoutRef = useRef<number | null>(null);
+  const hotTargetRef = useRef<HTMLElement | null>(null);
 
   const resolvedIndex = useMemo(() => {
     const matchIndex = items.findIndex((item) => item.href === pathname);
@@ -142,36 +145,109 @@ export const GooeyNav = ({
 
   const updateEffectPosition = (element: HTMLElement) => {
     if (!containerRef.current || !filterRef.current || !textRef.current) return;
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const pos = element.getBoundingClientRect();
+    const container = containerRef.current;
+    let left = 0;
+    let top = 0;
+    let node: HTMLElement | null = element;
+    let reachedContainer = false;
+
+    while (node && node !== container) {
+      left += node.offsetLeft;
+      top += node.offsetTop;
+      const parent = node.offsetParent as HTMLElement | null;
+      if (!parent) break;
+      node = parent;
+      if (node === container) {
+        reachedContainer = true;
+        break;
+      }
+    }
+
+    const width = element.offsetWidth;
+    const height = element.offsetHeight;
+
+    if (!reachedContainer) {
+      const containerRect = container.getBoundingClientRect();
+      const pos = element.getBoundingClientRect();
+      left = pos.left - containerRect.left;
+      top = pos.top - containerRect.top;
+    }
     const styles = {
-      left: `${pos.left - containerRect.left}px`,
-      top: `${pos.top - containerRect.top}px`,
-      width: `${pos.width}px`,
-      height: `${pos.height}px`,
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${width}px`,
+      height: `${height}px`,
     };
     Object.assign(filterRef.current.style, styles);
     Object.assign(textRef.current.style, styles);
     textRef.current.textContent = element.textContent ?? "";
   };
 
-  const runEffect = (target: HTMLElement) => {
-    updateEffectPosition(target);
+  const triggerHot = (target: HTMLElement) => {
+    if (hotTimeoutRef.current) {
+      window.clearTimeout(hotTimeoutRef.current);
+      hotTimeoutRef.current = null;
+    }
+    if (hotTargetRef.current && hotTargetRef.current !== target) {
+      hotTargetRef.current.removeAttribute("data-gooey-hot");
+    }
+    target.setAttribute("data-gooey-hot", "true");
+    hotTargetRef.current = target;
+    hotTimeoutRef.current = window.setTimeout(() => {
+      target.removeAttribute("data-gooey-hot");
+      if (hotTargetRef.current === target) {
+        hotTargetRef.current = null;
+      }
+      hotTimeoutRef.current = null;
+    }, animationTime * 1.6);
+  };
 
+  const showEffect = () => {
+    if (filterRef.current) {
+      filterRef.current.style.opacity = "1";
+    }
+    if (textRef.current) {
+      textRef.current.style.opacity = "1";
+    }
+  };
+
+  const hideEffect = () => {
     if (filterRef.current) {
       const particles = filterRef.current.querySelectorAll(".gooey-particle");
       particles.forEach((p) => filterRef.current?.removeChild(p));
+      filterRef.current.classList.remove("active");
+      filterRef.current.style.opacity = "0";
     }
-
     if (textRef.current) {
       textRef.current.classList.remove("active");
-      void textRef.current.offsetWidth;
-      textRef.current.classList.add("active");
+      textRef.current.style.opacity = "0";
+    }
+  };
+
+  const runEffect = (target: HTMLElement, options?: { hot?: boolean; particles?: boolean }) => {
+    showEffect();
+    updateEffectPosition(target);
+
+    if (options?.particles !== false) {
+      if (filterRef.current) {
+        const particles = filterRef.current.querySelectorAll(".gooey-particle");
+        particles.forEach((p) => filterRef.current?.removeChild(p));
+      }
+
+      if (textRef.current) {
+        textRef.current.classList.remove("active");
+        void textRef.current.offsetWidth;
+        textRef.current.classList.add("active");
+      }
+
+      if (filterRef.current) {
+        clearTimeouts();
+        makeParticles(filterRef.current);
+      }
     }
 
-    if (filterRef.current) {
-      clearTimeouts();
-      makeParticles(filterRef.current);
+    if (options?.hot !== false) {
+      triggerHot(target);
     }
   };
 
@@ -183,7 +259,10 @@ export const GooeyNav = ({
     }
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const link = event.currentTarget;
-    if (activeIndex === index) return;
+    if (activeIndex === index) {
+      runEffect(link);
+      return;
+    }
     if (origin === "home" && startMorph) {
       event.preventDefault();
       if (isMorphing) return;
@@ -202,8 +281,8 @@ export const GooeyNav = ({
     const link = event.currentTarget;
     if (activeIndex !== index) {
       setActiveIndex(index);
-      runEffect(link);
     }
+    runEffect(link);
     if (origin === "home" && startMorph) {
       startMorph(item);
       return;
@@ -212,13 +291,38 @@ export const GooeyNav = ({
     link.click();
   };
 
+  const handlePointerEnter = (event: PointerEvent<HTMLAnchorElement>, index: number) => {
+    const target = event.currentTarget;
+    if (hoverIndexRef.current === index) return;
+    hoverIndexRef.current = index;
+    runEffect(target);
+  };
+
+  const handlePointerLeave = (event: PointerEvent<HTMLAnchorElement>) => {
+    const next = (event.relatedTarget as HTMLElement | null)?.closest<HTMLElement>("[data-gooey-link]");
+    if (next) return;
+    hoverIndexRef.current = null;
+    hideEffect();
+  };
+
+  const handleFocus = (event: FocusEvent<HTMLAnchorElement>, index: number) => {
+    hoverIndexRef.current = index;
+    runEffect(event.currentTarget);
+  };
+
+  const handleBlur = (event: FocusEvent<HTMLAnchorElement>) => {
+    const next = (event.relatedTarget as HTMLElement | null)?.closest<HTMLElement>("[data-gooey-link]");
+    if (next) return;
+    hoverIndexRef.current = null;
+    hideEffect();
+  };
+
   useEffect(() => {
     if (!navRef.current || !containerRef.current) return;
     const activeLink = navRef.current.querySelectorAll<HTMLElement>("[data-gooey-link]")[activeIndex];
     if (activeLink) {
       updateEffectPosition(activeLink);
-      textRef.current?.classList.add("active");
-      filterRef.current?.classList.add("active");
+      hideEffect();
     }
 
     const handleResize = () => {
@@ -239,6 +343,14 @@ export const GooeyNav = ({
   useEffect(() => {
     return () => {
       clearTimeouts();
+      if (hotTimeoutRef.current) {
+        window.clearTimeout(hotTimeoutRef.current);
+        hotTimeoutRef.current = null;
+      }
+      if (hotTargetRef.current) {
+        hotTargetRef.current.removeAttribute("data-gooey-hot");
+        hotTargetRef.current = null;
+      }
     };
   }, []);
 
@@ -249,6 +361,10 @@ export const GooeyNav = ({
           const active = activeIndex === index;
           const fadeStyle =
             origin === "home" ? { opacity: isMorphing ? 0 : 1, transition: "opacity 220ms ease" } : undefined;
+          const linkStyle = {
+            ...(fadeStyle ?? {}),
+            "--nav-index": index,
+          } as CSSProperties;
           return (
             <Link
               key={item.key}
@@ -262,7 +378,11 @@ export const GooeyNav = ({
               aria-current={active ? "page" : undefined}
               onClick={(event) => handleClick(event, item, index)}
               onKeyDown={(event) => handleKeyDown(event, item, index)}
-              style={fadeStyle}
+              onPointerEnter={(event) => handlePointerEnter(event, index)}
+              onPointerLeave={handlePointerLeave}
+              onFocus={(event) => handleFocus(event, index)}
+              onBlur={handleBlur}
+              style={linkStyle}
               className={clsx(
                 "gooey-nav-link",
                 itemClassName,

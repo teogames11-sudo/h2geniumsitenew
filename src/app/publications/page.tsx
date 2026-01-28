@@ -70,6 +70,7 @@ export default function PublicationsPage() {
       return matchesQuery && matchesCategory && matchesType && matchesTag;
     });
   }, [activeCategory, activeTag, activeType, articleList, query]);
+  const sanitizeUrl = (url?: string) => url?.replace(/^https?:\/\/(www\.)?h2genium\.ru/i, "") ?? "";
 
   return (
     <div className="space-y-6">
@@ -167,14 +168,16 @@ export default function PublicationsPage() {
                 {item.date && <span className="text-[11px]">{item.date}</span>}
               </div>
               <p className="text-lg font-semibold text-[color:var(--text)]">{item.title || "Материал"}</p>
+              {item.url && (
               <a
                 className="text-sm text-[color:var(--accent-blue)] hover:underline"
-                href={item.url}
+                href={sanitizeUrl(item.url) || item.url}
                 target="_blank"
                 rel="noreferrer"
               >
-                {item.url}
+                {sanitizeUrl(item.url) || item.url}
               </a>
+              )}
               {item.excerpt && <p className="text-sm text-[color:var(--muted)]">{item.excerpt}</p>}
               {item.tags && item.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-[color:var(--muted)]">

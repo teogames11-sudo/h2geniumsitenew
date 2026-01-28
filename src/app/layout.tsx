@@ -14,7 +14,6 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://h2genium.ru"),
   title: "HYDROGENIUM NADH+ - водородные решения",
   description:
     "Водородные ингаляторы, капсулы и решения HYDROGENIUM NADH+ для программ оздоровления и поддержки клеточного баланса.",

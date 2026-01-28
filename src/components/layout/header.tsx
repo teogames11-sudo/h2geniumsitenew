@@ -78,7 +78,7 @@ export const Header = ({ disableHeroMode = false }: HeaderProps) => {
     opacity: shouldHideHeader ? 0 : 1,
     transform: "translate3d(0,0,0)",
     pointerEvents: shouldHideHeader ? "none" : "auto",
-    transition: "opacity 320ms ease",
+    transition: shouldHideHeader ? "opacity 0ms" : "opacity 320ms ease",
   } as const;
 
   return (
@@ -120,40 +120,36 @@ export const Header = ({ disableHeroMode = false }: HeaderProps) => {
             </Link>
           )}
 
-          <div className="header-nav-anchor col-start-2 hidden justify-center justify-self-center lg:flex">
+          <div className="header-nav-anchor col-start-2 hidden justify-center justify-self-center xl:flex">
             <GooeyNav
+              key={`header-nav-${pathname}`}
               items={NAV_ITEMS}
               ariaLabel="Main navigation"
-              className={clsx("header-nav-line flex items-center gap-2 xl:gap-3", showArc && "headerNavArc")}
+              className={clsx("header-nav-line flex items-center gap-1 xl:gap-2 2xl:gap-3", showArc && "headerNavArc")}
               itemClassName={clsx(
                 heroStyles.navButton,
                 heroStyles.homeTile,
                 heroStyles.dockButton,
-                "inline-flex h-12 min-w-[130px] max-w-[210px] items-center justify-center px-4 text-center text-[12px] font-semibold leading-snug text-white/95",
+                "inline-flex h-12 min-w-[100px] max-w-[170px] items-center justify-center px-3 text-center text-[11px] font-semibold leading-snug text-white/95 sm:min-w-[104px] sm:max-w-[176px] sm:px-3.5 sm:text-[11px] xl:min-w-[108px] xl:max-w-[190px] xl:px-4 xl:text-[12px] 2xl:min-w-[130px] 2xl:max-w-[210px]",
               )}
               activeClassName={clsx(heroStyles.navButtonActive, "text-white")}
               inactiveClassName=""
               hoverClassName=""
               contentVariant="homeTile"
+              particleCount={16}
+              particleDistances={[95, 12]}
+              particleR={110}
+              animationTime={640}
+              timeVariance={240}
+              colors={[1, 2, 3, 4, 2, 3, 1, 4]}
             />
           </div>
 
           <div className="col-start-3 flex shrink-0 items-center gap-2 justify-self-end lg:gap-3">
-            <GlassButton
-              as="a"
-              href="/contacts#form"
-              variant="primary"
-              data-ui-sound="cta"
-              className="glass-surface h-11 min-w-[118px] justify-center whitespace-nowrap rounded-full bg-gradient-to-r from-[color:var(--accent-blue)] via-[color:var(--accent-cyan)] to-[color:var(--accent-mint)] text-sm font-semibold shadow-[0_18px_38px_-18px_rgba(18,110,235,0.65)] hover:shadow-[0_22px_52px_-18px_rgba(18,110,235,0.8)] sm:h-12 sm:min-w-[150px]"
-            >
-              <span className="hidden whitespace-nowrap sm:inline">Оставить заявку</span>
-              <span className="sm:hidden">Заявка</span>
-            </GlassButton>
-
             <button
               className={clsx(
                 glassHeader,
-                "inline-flex h-11 w-11 items-center justify-center rounded-full lg:hidden",
+                "inline-flex h-11 w-11 items-center justify-center rounded-full xl:hidden",
                 panelMode && "command-panel-button",
               )}
               onClick={() => setMenuOpen((v) => !v)}

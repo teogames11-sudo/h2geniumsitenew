@@ -9,9 +9,6 @@ export default function ContactsPage() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const phone = "+7 (495) 240-91-21";
   const phoneHref = "tel:+74952409121";
-  const email = "info@h2genium.ru";
-  const emailHref = "mailto:info@h2genium.ru";
-  const siteHref = "https://www.h2genium.ru";
 
   const onChange = (key: keyof typeof form) => (e: ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -51,12 +48,6 @@ export default function ContactsPage() {
             </GlassButton>
             <GlassButton as="a" href={phoneHref} variant="ghost">
               Телефон: {phone}
-            </GlassButton>
-            <GlassButton as="a" href={emailHref} variant="ghost">
-              Email: {email}
-            </GlassButton>
-            <GlassButton as="a" href={siteHref} variant="ghost">
-              www.h2genium.ru
             </GlassButton>
           </div>
         </GlassCard>

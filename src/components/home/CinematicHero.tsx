@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   CSSProperties,
   memo,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -13,11 +14,12 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import clsx from "clsx";
-import { useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { NAV_ITEMS } from "@/config/nav";
-import { NavPills } from "@/components/nav/NavPills";
+import { GooeyNav } from "@/components/nav/GooeyNav";
 import { useNavMorph } from "@/components/transitions/NavMorphProvider";
-import { CursorTrail } from "@/components/home/CursorTrail";
+import { BlobCursor } from "@/components/ui/BlobCursor";
+import { SplashCursor } from "@/components/ui/SplashCursor";
 import { usePerformanceMode } from "@/hooks/usePerformanceMode";
 import styles from "./CinematicHero.module.css";
 
@@ -170,8 +172,9 @@ const CinematicHeroComponent = () => {
   const [videoIndex, setVideoIndex] = useState(0);
   const [slotSources, setSlotSources] = useState(() => [
     VIDEO_SOURCES[0],
-    VIDEO_SOURCES[1] ?? VIDEO_SOURCES[0],
+    VIDEO_SOURCES[0],
   ]);
+  const preloadTimeoutRef = useRef<number | null>(null);
   const swapLockRef = useRef(false);
   const pendingSwapRef = useRef<{ slot: number; index: number; prevSlot: number } | null>(null);
   const [videoReady, setVideoReady] = useState(false);
@@ -183,16 +186,53 @@ const CinematicHeroComponent = () => {
   const nadhHref = navMap.get(NAV_NADH_KEY)?.href ?? "/nadh";
   const cabinetsHref = navMap.get(NAV_CABINETS_KEY)?.href ?? "/application";
   const [introReady, setIntroReady] = useState(() => reduceMotion || lowPerf);
+  const [splashDone, setSplashDone] = useState(() => reduceMotion || lowPerf);
   const starField = useMemo(() => (lowPerf ? BASE_STARFIELD : STARFIELD), [lowPerf]);
+  const splashColor = useMemo(() => ({ r: 0.32, g: 0.1, b: 1 }), []);
+  const handleSplashComplete = useCallback(() => {
+    setSplashDone(true);
+    setIntroReady(true);
+  }, []);
+  const shouldAnimateIntro = !reduceMotion && !lowPerf;
+  const introState = shouldAnimateIntro ? (introReady ? "show" : "hidden") : "show";
+  const introInitial = shouldAnimateIntro ? "hidden" : "show";
+  const introEase = [0.22, 1, 0.36, 1] as const;
+  const introFade = {
+    hidden: { opacity: 0, y: 14, scale: 0.98 },
+    show: { opacity: 1, y: 0, scale: 1 },
+  };
+  const introLift = {
+    hidden: { opacity: 0, y: 20, scale: 0.98 },
+    show: { opacity: 1, y: 0, scale: 1 },
+  };
+  const introDrop = {
+    hidden: { opacity: 0, y: -14, scale: 0.98 },
+    show: { opacity: 1, y: 0, scale: 1 },
+  };
 
   useEffect(() => {
     if (reduceMotion || lowPerf) {
       setIntroReady(true);
-      return;
+      setSplashDone(true);
     }
-    const timeout = window.setTimeout(() => setIntroReady(true), 260);
-    return () => window.clearTimeout(timeout);
   }, [lowPerf, reduceMotion]);
+
+  useEffect(() => {
+    if (!shouldAnimateIntro || introReady) return;
+    const timeout = window.setTimeout(() => {
+      setIntroReady(true);
+    }, 180);
+    return () => window.clearTimeout(timeout);
+  }, [introReady, shouldAnimateIntro]);
+
+  useEffect(() => {
+    if (!shouldAnimateIntro || splashDone) return;
+    const timeout = window.setTimeout(() => {
+      setSplashDone(true);
+      setIntroReady(true);
+    }, 1900);
+    return () => window.clearTimeout(timeout);
+  }, [shouldAnimateIntro, splashDone]);
 
   useEffect(() => {
     if (reduceMotion || lowPerf) {
@@ -202,19 +242,32 @@ const CinematicHeroComponent = () => {
 
   useEffect(() => {
     if (reduceMotion || lowPerf) return;
+    if (!videoReady) return;
+    if (preloadTimeoutRef.current) {
+      window.clearTimeout(preloadTimeoutRef.current);
+    }
     const nextIndex = (videoIndex + 1) % VIDEO_SOURCES.length;
     const inactiveSlot = activeSlot === 0 ? 1 : 0;
-    setSlotSources((prev) => {
-      if (prev[inactiveSlot] === VIDEO_SOURCES[nextIndex]) return prev;
-      const next = [...prev];
-      next[inactiveSlot] = VIDEO_SOURCES[nextIndex];
-      return next;
-    });
-    const nextVideo = videoRefs.current[inactiveSlot];
-    if (nextVideo) {
-      nextVideo.load();
-    }
-  }, [activeSlot, lowPerf, reduceMotion, videoIndex]);
+    preloadTimeoutRef.current = window.setTimeout(() => {
+      setSlotSources((prev) => {
+        if (prev[inactiveSlot] === VIDEO_SOURCES[nextIndex]) return prev;
+        const next = [...prev];
+        next[inactiveSlot] = VIDEO_SOURCES[nextIndex];
+        return next;
+      });
+      const nextVideo = videoRefs.current[inactiveSlot];
+      if (nextVideo) {
+        nextVideo.preload = "auto";
+        nextVideo.load();
+      }
+    }, 600);
+    return () => {
+      if (preloadTimeoutRef.current) {
+        window.clearTimeout(preloadTimeoutRef.current);
+        preloadTimeoutRef.current = null;
+      }
+    };
+  }, [activeSlot, lowPerf, reduceMotion, videoIndex, videoReady]);
 
   useEffect(() => {
     if (reduceMotion || lowPerf) {
@@ -611,7 +664,7 @@ const CinematicHeroComponent = () => {
               autoPlay={isActive}
               muted
               playsInline
-              preload="auto"
+              preload={isActive ? "auto" : "none"}
               disablePictureInPicture
               controls={false}
               src={slotSources[slot]}
@@ -664,11 +717,52 @@ const CinematicHeroComponent = () => {
         ))}
       </div>
 
-      {!lowPerf && <CursorTrail targetRef={heroRef} className={styles.cursorTrail} />}
+      {!lowPerf && (
+        <BlobCursor
+          targetRef={heroRef}
+          className={styles.cursorTrail}
+          blobType="circle"
+          fillColor="#5227FF"
+          trailCount={3}
+          sizes={[64, 10, 10]}
+          innerSizes={[20, 20, 20]}
+          innerColor="rgba(255,255,255,0.8)"
+          opacities={[0.6, 0.6, 0.6]}
+          shadowColor="rgba(0,0,0,0.75)"
+          shadowBlur={39}
+          shadowOffsetX={10}
+          shadowOffsetY={10}
+          filterStdDeviation={30}
+          useFilter
+          fastDuration={0.1}
+          slowDuration={0.5}
+          zIndex={100}
+        />
+      )}
       {!lowPerf && <div className={styles.heroBreath} aria-hidden />}
 
       <div className={styles.uiLayer}>
-        <div className={styles.orbitTitleWrap} aria-label={TITLE}>
+        {shouldAnimateIntro && !splashDone && (
+          <SplashCursor
+            active={!splashDone}
+            SPLAT_RADIUS={0.18}
+            SPLAT_FORCE={4200}
+            BACK_COLOR={splashColor}
+            COLOR_UPDATE_SPEED={14}
+            DURATION={1700}
+            TRANSPARENT
+            onComplete={handleSplashComplete}
+          />
+        )}
+
+        <motion.div
+          className={styles.introStage}
+          variants={introDrop}
+          initial={introInitial}
+          animate={introState}
+          transition={{ duration: 0.85, delay: 0.12, ease: introEase }}
+        >
+          <div className={styles.orbitTitleWrap} aria-label={TITLE}>
           <div className={styles.orbitTitleParallax} aria-hidden="true">
             <div className={styles.titleOrbits} aria-hidden="true">
               <svg className={styles.titleOrbitSvg} viewBox="0 0 600 220" role="presentation" aria-hidden="true">
@@ -680,13 +774,18 @@ const CinematicHeroComponent = () => {
                   </linearGradient>
                 </defs>
                 <g className={styles.titleOrbitGroup}>
-                  <ellipse className={styles.titleOrbit} cx="300" cy="110" rx="230" ry="72" />
-                  <ellipse className={clsx(styles.titleOrbit, styles.titleOrbitAlt)} cx="300" cy="110" rx="260" ry="92" />
+                  <ellipse className={styles.titleOrbit} cx="300" cy="110" rx="250" ry="80" />
+                  <ellipse className={clsx(styles.titleOrbit, styles.titleOrbitAlt)} cx="300" cy="110" rx="280" ry="100" />
                 </g>
                 <g className={clsx(styles.titleOrbitGroup, styles.titleOrbitGroupAlt)}>
-                  <ellipse className={clsx(styles.titleOrbit, styles.titleOrbitThin)} cx="300" cy="110" rx="190" ry="56" />
+                  <ellipse className={clsx(styles.titleOrbit, styles.titleOrbitThin)} cx="300" cy="110" rx="210" ry="64" />
                 </g>
               </svg>
+              <div className={styles.orbitBalls} aria-hidden="true">
+                <span className={clsx(styles.orbitBall, styles.orbitBallOne)} />
+                <span className={clsx(styles.orbitBall, styles.orbitBallTwo)} />
+                <span className={clsx(styles.orbitBall, styles.orbitBallThree)} />
+              </div>
             </div>
             <div className={styles.titlePlanetOrbit} aria-hidden="true" />
             <div className={styles.titlePlanetTrack} aria-hidden="true">
@@ -703,57 +802,75 @@ const CinematicHeroComponent = () => {
               </span>
             </h1>
           </div>
-        </div>
-
-        <Link
-          href={nadhHref}
-          className={styles.sideLinkLeft}
-          aria-label="NADH CLINIC"
-          data-ui-sound="nav"
-          onPointerEnter={() => handleSideHover(NAV_NADH_KEY)}
-          onPointerLeave={() => handleSideHover()}
-          onFocus={() => handleSideHover(NAV_NADH_KEY)}
-          onBlur={() => handleSideHover()}
-          onPointerDown={handleRipple}
-          onClick={(event) => handleDirectNav(event, NAV_NADH_KEY, nadhHref)}
-        >
-          <div className={styles.sideObjectLeft} aria-hidden="true">
-            <span className={styles.capsuleCore} />
           </div>
-          <div className={styles.sideLabel}>NADH CLINIC</div>
-        </Link>
+        </motion.div>
 
-        <Link
-          href={cabinetsHref}
-          className={styles.sideLinkRight}
-          aria-label="Эпигенетическая коррекция"
-          data-ui-sound="nav"
-          onPointerEnter={() => handleSideHover(NAV_CABINETS_KEY)}
-          onPointerLeave={() => handleSideHover()}
-          onFocus={() => handleSideHover(NAV_CABINETS_KEY)}
-          onBlur={() => handleSideHover()}
-          onPointerDown={handleRipple}
-          onClick={(event) => handleDirectNav(event, NAV_CABINETS_KEY, cabinetsHref)}
+        <motion.div
+          className={styles.introStage}
+          variants={introFade}
+          initial={introInitial}
+          animate={introState}
+          transition={{ duration: 0.85, delay: 0.16, ease: introEase }}
         >
-          <div className={styles.sideObjectRight} aria-hidden="true">
-            <svg className={styles.starSvg} viewBox="0 0 200 200" role="presentation" aria-hidden="true">
-              <defs>
-                <linearGradient id="heroStarStroke" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="rgba(150,220,255,0.85)" />
-                  <stop offset="100%" stopColor="rgba(80,180,255,0.2)" />
-                </linearGradient>
-                <radialGradient id="heroStarGlow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="rgba(160,235,255,0.8)" />
-                  <stop offset="100%" stopColor="rgba(60,170,255,0)" />
-                </radialGradient>
-              </defs>
+          <Link
+            href={nadhHref}
+            className={styles.sideLinkLeft}
+            aria-label="NADH CLINIC"
+            data-ui-sound="nav"
+            onPointerEnter={() => handleSideHover(NAV_NADH_KEY)}
+            onPointerLeave={() => handleSideHover()}
+            onFocus={() => handleSideHover(NAV_NADH_KEY)}
+            onBlur={() => handleSideHover()}
+            onPointerDown={handleRipple}
+            onClick={(event) => handleDirectNav(event, NAV_NADH_KEY, nadhHref)}
+          >
+            <div className={styles.sideObjectLeft} aria-hidden="true">
+              <span className={styles.capsuleCore} />
+            </div>
+            <div className={styles.sideLabel}>NADH CLINIC</div>
+          </Link>
+        </motion.div>
+
+        <motion.div
+          className={styles.introStage}
+          variants={introFade}
+          initial={introInitial}
+          animate={introState}
+          transition={{ duration: 0.85, delay: 0.16, ease: introEase }}
+        >
+          <Link
+            href={cabinetsHref}
+            className={styles.sideLinkRight}
+            aria-label="Эпигенетическая коррекция"
+            data-ui-sound="nav"
+            onPointerEnter={() => handleSideHover(NAV_CABINETS_KEY)}
+            onPointerLeave={() => handleSideHover()}
+            onFocus={() => handleSideHover(NAV_CABINETS_KEY)}
+            onBlur={() => handleSideHover()}
+            onPointerDown={handleRipple}
+            onClick={(event) => handleDirectNav(event, NAV_CABINETS_KEY, cabinetsHref)}
+          >
+            <div className={styles.sideObjectRight} aria-hidden="true">
+              <svg className={styles.starSvg} viewBox="0 0 200 200" role="presentation" aria-hidden="true">
+                <defs>
+                  <linearGradient id="heroStarStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="rgba(120, 210, 255, 0.95)" />
+                    <stop offset="55%" stopColor="rgba(120, 140, 255, 0.75)" />
+                    <stop offset="100%" stopColor="rgba(170, 90, 255, 0.6)" />
+                  </linearGradient>
+                  <radialGradient id="heroStarGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="rgba(150, 220, 255, 0.9)" />
+                    <stop offset="55%" stopColor="rgba(120, 140, 255, 0.55)" />
+                    <stop offset="100%" stopColor="rgba(120, 60, 255, 0)" />
+                  </radialGradient>
+                </defs>
               <circle cx="100" cy="100" r="72" fill="url(#heroStarGlow)" />
               <polygon
                 className={styles.starStroke}
                 points="100,16 178,150 22,150"
                 fill="none"
                 stroke="url(#heroStarStroke)"
-                strokeWidth="2.2"
+                strokeWidth="2.6"
                 strokeLinejoin="round"
               />
               <polygon
@@ -761,7 +878,7 @@ const CinematicHeroComponent = () => {
                 points="100,184 178,50 22,50"
                 fill="none"
                 stroke="url(#heroStarStroke)"
-                strokeWidth="2.2"
+                strokeWidth="2.6"
                 strokeLinejoin="round"
               />
             </svg>
@@ -771,26 +888,44 @@ const CinematicHeroComponent = () => {
             <br />
             КОРРЕКЦИЯ
           </div>
-        </Link>
+          </Link>
+        </motion.div>
 
       </div>
-      <nav className={styles.navDock} role="navigation" aria-label="Primary navigation">
-        {!lowPerf && <div className={styles.navMorphPulse} aria-hidden />}
-        {!lowPerf && <div className={styles.navDockWires} aria-hidden />}
-        <NavPills
-          variant="homeDock"
-          items={NAV_ITEMS}
-          className={styles.navDockItems}
-          itemClassName={clsx(
-            styles.navButton,
-            styles.homeTile,
-            styles.dockButton,
-            "inline-flex h-12 min-w-[130px] max-w-[210px] items-center justify-center px-4 text-center text-[12px] font-semibold leading-snug text-white/95",
-          )}
-          activeClassName={clsx(styles.navButtonActive, "text-white")}
-          ariaLabel="Primary navigation"
-        />
-      </nav>
+      <motion.div
+        className={styles.introStage}
+        variants={introLift}
+        initial={introInitial}
+        animate={introState}
+        transition={{ duration: 0.85, delay: 0.2, ease: introEase }}
+      >
+        <nav className={styles.navDock} role="navigation" aria-label="Primary navigation">
+          {!lowPerf && <div className={styles.navMorphPulse} aria-hidden />}
+          {!lowPerf && <div className={styles.navDockWires} aria-hidden />}
+          <GooeyNav
+            items={NAV_ITEMS}
+            origin="home"
+            ariaLabel="Primary navigation"
+            className={styles.navDockItems}
+            itemClassName={clsx(
+              styles.navButton,
+              styles.homeTile,
+              styles.dockButton,
+              "inline-flex h-10 min-w-[108px] max-w-[170px] items-center justify-center px-3 text-center text-[10px] font-semibold leading-snug text-white/95 sm:h-11 sm:min-w-[120px] sm:max-w-[190px] sm:px-3.5 sm:text-[11px] lg:h-12 lg:min-w-[130px] lg:max-w-[210px] lg:px-4 lg:text-[12px]",
+            )}
+            activeClassName={clsx(styles.navButtonActive, "text-white")}
+            inactiveClassName="text-white/95"
+            hoverClassName=""
+            contentVariant="homeTile"
+            particleCount={16}
+            particleDistances={[95, 12]}
+            particleR={110}
+            animationTime={640}
+            timeVariance={240}
+            colors={[1, 2, 3, 4, 2, 3, 1, 4]}
+          />
+        </nav>
+      </motion.div>
     </section>
   );
 

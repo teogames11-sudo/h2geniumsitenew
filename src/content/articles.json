@@ -1,6 +1,6 @@
 [
   {
-    "url": "https://h2genium.ru/publications/cabinet-roi",
+    "url": "/publications/cabinet-roi",
     "title": "Гайд: расчет потока клиентов и окупаемости водородного кабинета",
     "excerpt": "Как оценить целевой поток, длительность сеанса и ориентировочную окупаемость без медицинских обещаний.",
     "category": "Бизнес-модель",
@@ -9,7 +9,7 @@
     "date": "2026-01-10"
   },
   {
-    "url": "https://h2genium.ru/publications/inhalation-protocols",
+    "url": "/publications/inhalation-protocols",
     "title": "Обзор: ингаляционные форматы в реабилитации и превентивной медицине",
     "excerpt": "Сценарии применения, требования к потоку и контроль регламентов для команд клиник и центров.",
     "category": "Протоколы",
@@ -18,7 +18,7 @@
     "date": "2026-01-08"
   },
   {
-    "url": "https://h2genium.ru/publications/nadh-medspa",
+    "url": "/publications/nadh-medspa",
     "title": "Практика: интеграция NAD+ в медSPA-программы",
     "excerpt": "Как комбинировать NAD+ гель и водородные процедуры в коротких курсах ухода.",
     "category": "Практика",
@@ -27,7 +27,7 @@
     "date": "2026-01-06"
   },
   {
-    "url": "https://h2genium.ru/publications/format-compare",
+    "url": "/publications/format-compare",
     "title": "Сравнение форматов: ингаляция vs капсула",
     "excerpt": "Ключевые различия по пропускной способности, длительности сеанса и требованиям к помещению.",
     "category": "Сравнение",
@@ -36,7 +36,7 @@
     "date": "2026-01-04"
   },
   {
-    "url": "https://h2genium.ru/publications/h2-quality",
+    "url": "/publications/h2-quality",
     "title": "Технология: чистота водорода и контроль потока",
     "excerpt": "Что влияет на стабильность параметров и как фиксировать их в регламентах.",
     "category": "Технологии",
@@ -45,7 +45,7 @@
     "date": "2026-01-02"
   },
   {
-    "url": "https://h2genium.ru/publications/launch-checklist",
+    "url": "/publications/launch-checklist",
     "title": "Чек-лист запуска водородного кабинета",
     "excerpt": "Порядок действий: помещение, сценарии обслуживания, документация и обучение персонала.",
     "category": "Операции",
@@ -54,3 +54,4 @@
     "date": "2025-12-28"
   }
 ]
+

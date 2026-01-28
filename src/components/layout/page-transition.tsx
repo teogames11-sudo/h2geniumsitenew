@@ -70,16 +70,16 @@ export const PageTransition = ({ children }: { children: ReactNode }) => {
   };
   const sheenDuration = Math.max(PAGE_FADE_DURATION, 960) / 1000;
   const showSheen = !isHome && !lowPerf;
-  const showRipple = !lowPerf;
+  const showRipple = !lowPerf && !isHome;
 
   return (
-    <AnimatePresence mode="wait" custom={transitionMeta}>
+    <AnimatePresence mode={isHome ? "sync" : "wait"} custom={transitionMeta}>
       <motion.div
         key={pathname}
         custom={transitionMeta}
         initial={(meta) => {
           if (meta.to === "/") {
-            return { opacity: 0 };
+            return { opacity: 1 };
           }
           if (meta.from === "/") {
             return { opacity: 0, y: 24, scale: 0.97 };
