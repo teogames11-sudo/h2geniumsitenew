@@ -41,11 +41,11 @@ export const GooeyNav = ({
   itemClassName,
   itemWrapperClassName,
   ariaLabel = "Main navigation",
-  animationTime = 600,
+  animationTime = 900,
   particleCount = 15,
   particleDistances = [90, 10],
   particleR = 100,
-  timeVariance = 300,
+  timeVariance = 420,
   colors = [1, 2, 3, 1, 2, 3, 1, 4],
   initialActiveIndex = 0,
   origin = "header",
@@ -65,6 +65,9 @@ export const GooeyNav = ({
   const hoverIndexRef = useRef<number | null>(null);
   const hotTimeoutRef = useRef<number | null>(null);
   const hotTargetRef = useRef<HTMLElement | null>(null);
+  const hideTimeoutRef = useRef<number | null>(null);
+  const lastBurstRef = useRef(0);
+  const hideDelay = Math.min(2200, Math.max(1200, animationTime * 2));
 
   const resolvedIndex = useMemo(() => {
     const matchIndex = items.findIndex((item) => item.href === pathname);
@@ -83,6 +86,13 @@ export const GooeyNav = ({
   const clearTimeouts = () => {
     timeoutsRef.current.forEach((id) => window.clearTimeout(id));
     timeoutsRef.current = [];
+  };
+
+  const clearHideTimeout = () => {
+    if (hideTimeoutRef.current) {
+      window.clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
   };
 
   const createParticle = (i: number, t: number, d: [number, number], r: number) => {
@@ -203,6 +213,7 @@ export const GooeyNav = ({
   };
 
   const showEffect = () => {
+    clearHideTimeout();
     if (filterRef.current) {
       filterRef.current.style.opacity = "1";
     }
@@ -212,11 +223,17 @@ export const GooeyNav = ({
   };
 
   const hideEffect = () => {
+    clearHideTimeout();
     if (filterRef.current) {
-      const particles = filterRef.current.querySelectorAll(".gooey-particle");
-      particles.forEach((p) => filterRef.current?.removeChild(p));
-      filterRef.current.classList.remove("active");
-      filterRef.current.style.opacity = "0";
+      const element = filterRef.current;
+      element.classList.remove("active");
+      element.style.opacity = "0";
+      const cleanupId = window.setTimeout(() => {
+        if (!element.isConnected) return;
+        const particles = element.querySelectorAll(".gooey-particle");
+        particles.forEach((p) => element.removeChild(p));
+      }, 700);
+      timeoutsRef.current.push(cleanupId);
     }
     if (textRef.current) {
       textRef.current.classList.remove("active");
@@ -224,11 +241,22 @@ export const GooeyNav = ({
     }
   };
 
+  const scheduleHideEffect = () => {
+    clearHideTimeout();
+    hideTimeoutRef.current = window.setTimeout(() => {
+      hideTimeoutRef.current = null;
+      hideEffect();
+    }, hideDelay);
+  };
+
   const runEffect = (target: HTMLElement, options?: { hot?: boolean; particles?: boolean }) => {
     showEffect();
     updateEffectPosition(target);
 
-    if (options?.particles !== false) {
+    const now = performance.now();
+    const allowParticles = options?.particles !== false && now - lastBurstRef.current > 220;
+    if (allowParticles) {
+      lastBurstRef.current = now;
       if (filterRef.current) {
         const particles = filterRef.current.querySelectorAll(".gooey-particle");
         particles.forEach((p) => filterRef.current?.removeChild(p));
@@ -298,11 +326,14 @@ export const GooeyNav = ({
     runEffect(target);
   };
 
+  const resolveRelatedLink = (target: EventTarget | null) =>
+    target instanceof Element ? target.closest<HTMLElement>("[data-gooey-link]") : null;
+
   const handlePointerLeave = (event: PointerEvent<HTMLAnchorElement>) => {
-    const next = (event.relatedTarget as HTMLElement | null)?.closest<HTMLElement>("[data-gooey-link]");
+    const next = resolveRelatedLink(event.relatedTarget);
     if (next) return;
     hoverIndexRef.current = null;
-    hideEffect();
+    scheduleHideEffect();
   };
 
   const handleFocus = (event: FocusEvent<HTMLAnchorElement>, index: number) => {
@@ -311,10 +342,10 @@ export const GooeyNav = ({
   };
 
   const handleBlur = (event: FocusEvent<HTMLAnchorElement>) => {
-    const next = (event.relatedTarget as HTMLElement | null)?.closest<HTMLElement>("[data-gooey-link]");
+    const next = resolveRelatedLink(event.relatedTarget);
     if (next) return;
     hoverIndexRef.current = null;
-    hideEffect();
+    scheduleHideEffect();
   };
 
   useEffect(() => {
@@ -346,6 +377,10 @@ export const GooeyNav = ({
       if (hotTimeoutRef.current) {
         window.clearTimeout(hotTimeoutRef.current);
         hotTimeoutRef.current = null;
+      }
+      if (hideTimeoutRef.current) {
+        window.clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
       }
       if (hotTargetRef.current) {
         hotTargetRef.current.removeAttribute("data-gooey-hot");

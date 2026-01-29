@@ -12,7 +12,7 @@
   --accent-blue: #126eeb;
   --accent-mint: #41e0c4;
   --text: #ecf5ff;
-  --muted: rgba(236, 245, 255, 0.64);
+  --muted: rgba(236, 245, 255, 0.84);
   --nav-pill-radius: 20px;
   --nav-pill-bg: linear-gradient(135deg, rgba(18, 110, 235, 0.38), rgba(47, 183, 255, 0.22));
   --nav-pill-border: rgba(90, 170, 255, 0.65);
@@ -69,6 +69,11 @@ body {
 body:not(.home-fullscreen) {
   background: var(--bg-grad-lite);
   background-color: #0f1f36;
+  --glass-bg: rgba(22, 36, 58, 0.8);
+  --glass-stroke: rgba(170, 235, 255, 0.36);
+  --shadow-1: 0 20px 60px -28px rgba(4, 10, 20, 0.62), 0 0 36px rgba(47, 183, 255, 0.18);
+  --shadow-2: 0 12px 30px -18px rgba(4, 10, 20, 0.52);
+  --muted: rgba(236, 245, 255, 0.88);
 }
 
 html.home-fullscreen {
@@ -92,6 +97,19 @@ body.home-fullscreen {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+a,
+button,
+[role="button"] {
+  transition:
+    color 240ms ease,
+    background-color 240ms ease,
+    border-color 240ms ease,
+    box-shadow 240ms ease,
+    transform 240ms ease,
+    filter 240ms ease,
+    opacity 240ms ease;
 }
 
 .glass-surface {
@@ -365,10 +383,21 @@ a {
 
 .gooey-nav-link {
   color: inherit;
+  transition: color 280ms ease, filter 280ms ease, text-shadow 280ms ease, transform 280ms ease;
 }
 
 .gooey-nav-link:focus-visible {
   box-shadow: 0 0 0.5px 1.5px rgba(255, 255, 255, 0.9);
+}
+
+.gooey-nav-link::before,
+.gooey-nav-link::after {
+  transition:
+    opacity 420ms ease,
+    transform 420ms ease,
+    box-shadow 420ms ease,
+    filter 420ms ease,
+    background 420ms ease;
 }
 
 .gooey-nav-container .headerNavPill::before {
@@ -386,6 +415,8 @@ a {
   width: 0;
   height: 0;
   opacity: 1;
+  transition: opacity 1000ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity;
   pointer-events: none;
   display: grid;
   place-items: center;
@@ -401,23 +432,24 @@ a {
 }
 
 .gooey-nav-container .effect.filter {
-  filter: blur(10px) contrast(112) saturate(1.02);
+  filter: blur(8px) contrast(106) saturate(1.02);
   mix-blend-mode: screen;
-  opacity: 0.6;
+  opacity: 0.52;
 }
 
 .gooey-nav-container .effect.filter::before {
   content: "";
   position: absolute;
-  inset: -42px;
+  inset: -28px;
   z-index: -2;
   background:
-    radial-gradient(circle at 50% 50%, rgba(110, 150, 255, 0.35), rgba(110, 150, 255, 0) 70%);
+    radial-gradient(circle at 50% 50%, rgba(110, 150, 255, 0.32), rgba(110, 150, 255, 0) 60%);
   opacity: 0;
+  transition: opacity 700ms ease;
 }
 
 .gooey-nav-container .effect.filter.active::before {
-  opacity: 0.65;
+  opacity: 0.5;
 }
 
 .gooey-nav-container .effect.filter::after {
@@ -425,23 +457,28 @@ a {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(120% 120% at 50% 35%, rgba(120, 160, 255, 0.35), rgba(120, 160, 255, 0) 65%),
+    radial-gradient(110% 110% at 50% 40%, rgba(120, 160, 255, 0.28), rgba(120, 160, 255, 0) 60%),
     var(--gooey-pill);
-  transform: scale(0);
+  transform: scale(0.92);
   opacity: 0;
   z-index: -1;
   border-radius: var(--nav-pill-radius);
   box-shadow: var(--gooey-shadow);
+  transition: opacity 900ms ease, transform 900ms ease;
 }
 
 .gooey-nav-container .effect.active::after {
-  animation: gooey-pill 0.3s ease both;
+  animation: gooey-pill 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes gooey-pill {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
   to {
-    transform: scale(1.03);
-    opacity: 0.5;
+    transform: scale(1.01);
+    opacity: 0.45;
   }
 }
 
@@ -449,8 +486,8 @@ a {
 .gooey-nav-container .gooey-point {
   display: block;
   opacity: 0;
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   border-radius: 100%;
   transform-origin: center;
   filter: blur(0.2px);
@@ -712,6 +749,54 @@ a {
   margin-right: -50vw;
 }
 
+.nadh-sphere {
+  isolation: isolate;
+  background: radial-gradient(
+    circle at 30% 28%,
+    rgba(130, 205, 255, 0.68) 0%,
+    rgba(35, 90, 170, 0.78) 42%,
+    rgba(8, 18, 40, 0.98) 78%
+  );
+  box-shadow:
+    inset 0 -22px 30px rgba(0, 0, 0, 0.55),
+    inset 0 18px 28px rgba(120, 200, 255, 0.22),
+    0 22px 44px -22px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(47, 183, 255, 0.15);
+}
+
+.nadh-sphere-surface {
+  position: absolute;
+  inset: -18%;
+  border-radius: 9999px;
+  background:
+    conic-gradient(
+      from 0deg,
+      rgba(18, 110, 235, 0) 0deg,
+      rgba(110, 200, 255, 0.35) 60deg,
+      rgba(18, 110, 235, 0) 130deg,
+      rgba(90, 180, 255, 0.28) 210deg,
+      rgba(18, 110, 235, 0) 290deg,
+      rgba(120, 210, 255, 0.25) 330deg,
+      rgba(18, 110, 235, 0) 360deg
+    );
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  filter: blur(1px);
+  z-index: 1;
+  animation: nadhSphereSpin 22s linear infinite;
+}
+
+.nadh-sphere-shade {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 28% 26%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 45%),
+    radial-gradient(circle at 72% 74%, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0) 60%);
+  opacity: 0.9;
+  z-index: 2;
+}
+
 ::selection {
   background: rgba(65, 224, 196, 0.22);
   color: #f6fbff;
@@ -731,7 +816,8 @@ a {
   .orbit-item-inner,
   .orbit-lines path,
   .spark,
-  .nadh-glow {
+  .nadh-glow,
+  .nadh-sphere-surface {
     animation: none !important;
   }
 
@@ -757,6 +843,15 @@ a {
   }
   to {
     transform: rotate(-360deg);
+  }
+}
+
+@keyframes nadhSphereSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

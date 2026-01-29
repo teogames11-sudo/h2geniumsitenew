@@ -18,7 +18,6 @@ import { motion, useReducedMotion } from "framer-motion";
 import { NAV_ITEMS } from "@/config/nav";
 import { GooeyNav } from "@/components/nav/GooeyNav";
 import { useNavMorph } from "@/components/transitions/NavMorphProvider";
-import { BlobCursor } from "@/components/ui/BlobCursor";
 import { SplashCursor } from "@/components/ui/SplashCursor";
 import { usePerformanceMode } from "@/hooks/usePerformanceMode";
 import styles from "./CinematicHero.module.css";
@@ -29,9 +28,11 @@ const TITLE = `${TITLE_TOP} ${TITLE_BOTTOM}`;
 const NAV_NADH_KEY = "nadh";
 const NAV_CABINETS_KEY = "cabinets";
 const ENABLE_NAV_MAGNET = false;
+const SPLASH_DURATION = 2400;
+const SPLASH_FORCE = 3800;
 const VIDEO_SOURCES = [
-  "/video/kling_20260126_VIDEO_Image1_____610_0.mp4",
-  "/video/ezgif-364514d4efc9a228.mp4",
+  "/video/1 VID 4K.mp4",
+  "/video/2 VID 4K.mp4",
 ];
 const mulberry32 = (seed: number) => {
   let t = seed >>> 0;
@@ -136,25 +137,25 @@ const BASE_STARFIELD = [
 
 const STARFIELD = [
   ...BASE_STARFIELD,
-  ...createStars(26, 20260126, {
+  ...createStars(46, 20260126, {
     xMin: 4,
     xMax: 96,
     yMin: 4,
     yMax: 58,
-    sizeMin: 1.0,
-    sizeMax: 2.8,
-    opacityMin: 0.65,
-    opacityMax: 0.98,
+    sizeMin: 1.2,
+    sizeMax: 3.2,
+    opacityMin: 0.72,
+    opacityMax: 1,
   }),
-  ...createStars(18, 20260127, {
+  ...createStars(32, 20260127, {
     xMin: 8,
     xMax: 92,
     yMin: 52,
     yMax: 74,
-    sizeMin: 0.9,
-    sizeMax: 2.1,
-    opacityMin: 0.45,
-    opacityMax: 0.78,
+    sizeMin: 1.0,
+    sizeMax: 2.4,
+    opacityMin: 0.58,
+    opacityMax: 0.88,
   }),
 ];
 
@@ -221,7 +222,7 @@ const CinematicHeroComponent = () => {
     if (!shouldAnimateIntro || introReady) return;
     const timeout = window.setTimeout(() => {
       setIntroReady(true);
-    }, 180);
+    }, 240);
     return () => window.clearTimeout(timeout);
   }, [introReady, shouldAnimateIntro]);
 
@@ -230,7 +231,7 @@ const CinematicHeroComponent = () => {
     const timeout = window.setTimeout(() => {
       setSplashDone(true);
       setIntroReady(true);
-    }, 1900);
+    }, SPLASH_DURATION + 200);
     return () => window.clearTimeout(timeout);
   }, [shouldAnimateIntro, splashDone]);
 
@@ -717,39 +718,17 @@ const CinematicHeroComponent = () => {
         ))}
       </div>
 
-      {!lowPerf && (
-        <BlobCursor
-          targetRef={heroRef}
-          className={styles.cursorTrail}
-          blobType="circle"
-          fillColor="#5227FF"
-          trailCount={3}
-          sizes={[64, 10, 10]}
-          innerSizes={[20, 20, 20]}
-          innerColor="rgba(255,255,255,0.8)"
-          opacities={[0.6, 0.6, 0.6]}
-          shadowColor="rgba(0,0,0,0.75)"
-          shadowBlur={39}
-          shadowOffsetX={10}
-          shadowOffsetY={10}
-          filterStdDeviation={30}
-          useFilter
-          fastDuration={0.1}
-          slowDuration={0.5}
-          zIndex={100}
-        />
-      )}
       {!lowPerf && <div className={styles.heroBreath} aria-hidden />}
 
       <div className={styles.uiLayer}>
         {shouldAnimateIntro && !splashDone && (
           <SplashCursor
             active={!splashDone}
-            SPLAT_RADIUS={0.18}
-            SPLAT_FORCE={4200}
+            SPLAT_RADIUS={0.19}
+            SPLAT_FORCE={SPLASH_FORCE}
             BACK_COLOR={splashColor}
             COLOR_UPDATE_SPEED={14}
-            DURATION={1700}
+            DURATION={SPLASH_DURATION}
             TRANSPARENT
             onComplete={handleSplashComplete}
           />
@@ -760,7 +739,7 @@ const CinematicHeroComponent = () => {
           variants={introDrop}
           initial={introInitial}
           animate={introState}
-          transition={{ duration: 0.85, delay: 0.12, ease: introEase }}
+          transition={{ duration: 1.1, delay: 0.16, ease: introEase }}
         >
           <div className={styles.orbitTitleWrap} aria-label={TITLE}>
           <div className={styles.orbitTitleParallax} aria-hidden="true">
@@ -768,9 +747,9 @@ const CinematicHeroComponent = () => {
               <svg className={styles.titleOrbitSvg} viewBox="0 0 600 220" role="presentation" aria-hidden="true">
                 <defs>
                   <linearGradient id="heroOrbitGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="rgba(126, 231, 255, 0.15)" />
-                    <stop offset="45%" stopColor="rgba(126, 231, 255, 0.8)" />
-                    <stop offset="100%" stopColor="rgba(60, 203, 255, 0.2)" />
+                    <stop offset="0%" stopColor="rgba(90, 225, 255, 0.4)" />
+                    <stop offset="45%" stopColor="rgba(110, 235, 255, 0.95)" />
+                    <stop offset="100%" stopColor="rgba(70, 210, 255, 0.45)" />
                   </linearGradient>
                 </defs>
                 <g className={styles.titleOrbitGroup}>
@@ -810,7 +789,7 @@ const CinematicHeroComponent = () => {
           variants={introFade}
           initial={introInitial}
           animate={introState}
-          transition={{ duration: 0.85, delay: 0.16, ease: introEase }}
+          transition={{ duration: 1.1, delay: 0.2, ease: introEase }}
         >
           <Link
             href={nadhHref}
@@ -836,7 +815,7 @@ const CinematicHeroComponent = () => {
           variants={introFade}
           initial={introInitial}
           animate={introState}
-          transition={{ duration: 0.85, delay: 0.16, ease: introEase }}
+          transition={{ duration: 1.1, delay: 0.2, ease: introEase }}
         >
           <Link
             href={cabinetsHref}
@@ -897,7 +876,7 @@ const CinematicHeroComponent = () => {
         variants={introLift}
         initial={introInitial}
         animate={introState}
-        transition={{ duration: 0.85, delay: 0.2, ease: introEase }}
+        transition={{ duration: 1.1, delay: 0.24, ease: introEase }}
       >
         <nav className={styles.navDock} role="navigation" aria-label="Primary navigation">
           {!lowPerf && <div className={styles.navMorphPulse} aria-hidden />}
@@ -918,10 +897,10 @@ const CinematicHeroComponent = () => {
             hoverClassName=""
             contentVariant="homeTile"
             particleCount={16}
-            particleDistances={[95, 12]}
-            particleR={110}
-            animationTime={640}
-            timeVariance={240}
+            particleDistances={[70, 8]}
+            particleR={80}
+            animationTime={900}
+            timeVariance={360}
             colors={[1, 2, 3, 4, 2, 3, 1, 4]}
           />
         </nav>

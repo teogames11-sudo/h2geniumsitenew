@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,6 +25,7 @@ export const Header = ({ disableHeroMode = false }: HeaderProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const tickingRef = useRef(false);
   const scrolledRef = useRef(false);
+  const touchToggleRef = useRef(false);
   const heroMode = !disableHeroMode && isHome && !scrolled;
   const panelMode = !isHome;
   const showArc = false;
@@ -80,6 +81,25 @@ export const Header = ({ disableHeroMode = false }: HeaderProps) => {
     pointerEvents: shouldHideHeader ? "none" : "auto",
     transition: shouldHideHeader ? "opacity 0ms" : "opacity 320ms ease",
   } as const;
+
+  const toggleMenu = () => {
+    setMenuOpen((v) => !v);
+  };
+
+  const handleMenuPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType !== "touch") return;
+    event.preventDefault();
+    touchToggleRef.current = true;
+    toggleMenu();
+  };
+
+  const handleMenuClick = () => {
+    if (touchToggleRef.current) {
+      touchToggleRef.current = false;
+      return;
+    }
+    toggleMenu();
+  };
 
   return (
     <header className={clsx("site-header fixed top-0 z-40 w-full", panelMode && "header-console")} style={headerStyle}>
@@ -137,10 +157,10 @@ export const Header = ({ disableHeroMode = false }: HeaderProps) => {
               hoverClassName=""
               contentVariant="homeTile"
               particleCount={16}
-              particleDistances={[95, 12]}
-              particleR={110}
-              animationTime={640}
-              timeVariance={240}
+              particleDistances={[70, 8]}
+              particleR={80}
+              animationTime={900}
+              timeVariance={360}
               colors={[1, 2, 3, 4, 2, 3, 1, 4]}
             />
           </div>
@@ -152,8 +172,10 @@ export const Header = ({ disableHeroMode = false }: HeaderProps) => {
                 "inline-flex h-11 w-11 items-center justify-center rounded-full xl:hidden",
                 panelMode && "command-panel-button",
               )}
-              onClick={() => setMenuOpen((v) => !v)}
+              onPointerDown={handleMenuPointerDown}
+              onClick={handleMenuClick}
               aria-label={menuOpen ? "Закрыть меню" : "Открыть меню"}
+              type="button"
             >
               {menuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
@@ -168,7 +190,7 @@ export const Header = ({ disableHeroMode = false }: HeaderProps) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.25 }}
-            className="lg:hidden"
+            className="xl:hidden"
           >
             <div className="mx-4 mb-4 rounded-3xl border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/95 p-4 shadow-[0_18px_50px_-18px_rgba(0,0,0,0.28),0_8px_24px_-12px_rgba(0,0,0,0.18)] backdrop-blur-2xl">
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
