@@ -22,7 +22,7 @@ type Bubble = {
   blur: number;
 };
 
-type NadhRouterProps = { wide?: boolean };
+type NadhRouterProps = { wide?: boolean; disableReveal?: boolean };
 
 const mulberry32 = (seed: number) => {
   let t = seed >>> 0;
@@ -34,7 +34,7 @@ const mulberry32 = (seed: number) => {
   };
 };
 
-export const NadhRouter = ({ wide = false }: NadhRouterProps) => {
+export const NadhRouter = ({ wide = false, disableReveal = false }: NadhRouterProps) => {
   const reduceMotion = useReducedMotion();
   const orbitRef = useRef<HTMLDivElement | null>(null);
   const bubbleLayerRef = useRef<HTMLDivElement | null>(null);
@@ -171,12 +171,14 @@ export const NadhRouter = ({ wide = false }: NadhRouterProps) => {
     wide ? "min-h-[520px] sm:min-h-[580px] md:min-h-[640px] lg:min-h-[700px]" : "min-h-[520px]",
   );
 
+  const Wrapper = disableReveal ? "div" : Reveal;
+
   return (
     <section id="nadh" className={sectionClasses}>
       <div className="pointer-events-none absolute inset-[-28px] -z-10 rounded-[42px] bg-[radial-gradient(circle_at_40%_28%,rgba(47,183,255,0.2),transparent_55%),radial-gradient(circle_at_72%_72%,rgba(65,224,196,0.16),transparent_55%)] blur-[76px] opacity-80 animate-[softGlow_5.4s_ease-in-out_infinite]" />
       <div className="pointer-events-none absolute inset-0 -z-10 rounded-[32px] bg-gradient-to-b from-[rgba(90,160,220,0.18)] via-transparent to-[rgba(10,20,40,0.2)]" />
 
-      <Reveal className="space-y-4">
+      <Wrapper className="space-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <GlassBadge tone="mint">NADH</GlassBadge>
         </div>
@@ -282,7 +284,7 @@ export const NadhRouter = ({ wide = false }: NadhRouterProps) => {
         </GlassCard>
 
         
-      </Reveal>
+      </Wrapper>
     </section>
   );
 };

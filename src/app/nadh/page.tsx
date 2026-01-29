@@ -167,7 +167,7 @@ export default function NadhPage() {
         </div>
       </Reveal>
 
-      <NadhRouter wide />
+      <NadhRouter wide disableReveal />
 
       <Reveal className="relative">
         <GlassCard className="relative mx-auto max-w-5xl space-y-6 overflow-hidden border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/85 p-6 shadow-[var(--shadow-2)] backdrop-blur-2xl md:p-10">
