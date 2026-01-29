@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { GlassBadge, GlassButton, GlassCard, GlassTabs } from "@/components/ui/glass";
 import { Reveal } from "@/components/ui/reveal";
+import { NadhRouter } from "@/components/home/nadh-router";
 
 const sections = [
   {
@@ -165,6 +166,8 @@ export default function NadhPage() {
           </GlassButton>
         </div>
       </Reveal>
+
+      <NadhRouter wide />
 
       <Reveal className="relative">
         <GlassCard className="relative mx-auto max-w-5xl space-y-6 overflow-hidden border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/85 p-6 shadow-[var(--shadow-2)] backdrop-blur-2xl md:p-10">

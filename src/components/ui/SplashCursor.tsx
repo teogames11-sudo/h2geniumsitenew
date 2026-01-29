@@ -25,7 +25,6 @@ type SplashCursorProps = {
 };
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
-const clamp = (min: number, value: number, max: number) => Math.min(max, Math.max(min, value));
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const mixColor = (a: [number, number, number], b: [number, number, number], t: number, alpha: number) => {
@@ -81,21 +80,23 @@ export const SplashCursor = ({
     const splashStrength = Math.min(1.2, Math.max(0.6, SPLAT_FORCE / 6000));
     const baseR = Math.min(canvas.clientWidth, canvas.clientHeight) * SPLAT_RADIUS;
     const maxR = Math.hypot(canvas.clientWidth, canvas.clientHeight) * 0.6;
-  const baseColor = [
-    Math.round(BACK_COLOR.r * 255),
-    Math.round(BACK_COLOR.g * 255),
-    Math.round(BACK_COLOR.b * 255),
-  ] as [number, number, number];
-  const altColor: [number, number, number] = [110, 70, 255];
-  const blueColor: [number, number, number] = [90, 160, 255];
+    const baseColor = [
+      Math.round(BACK_COLOR.r * 255),
+      Math.round(BACK_COLOR.g * 255),
+      Math.round(BACK_COLOR.b * 255),
+    ] as [number, number, number];
+    const altColor: [number, number, number] = [110, 70, 255];
+    const blueColor: [number, number, number] = [90, 160, 255];
 
     const draw = (now: number) => {
       const progress = Math.min(1, (now - start) / duration);
       const out = easeOutCubic(progress);
-      const rebound = progress > 0.72 ? Math.sin(((progress - 0.72) / 0.28) * Math.PI) : 0;
-      const radius = baseR + (maxR - baseR) * (out - rebound * 0.04);
-      const energy = Math.pow(1 - progress, 0.7);
-      const alpha = energy * 0.55 * splashStrength;
+      const rebound = progress > 0.7 ? Math.sin(((progress - 0.7) / 0.3) * Math.PI) : 0;
+      const rawRadius = baseR + (maxR - baseR) * (out - rebound * 0.028);
+      const safeRadius = Number.isFinite(rawRadius) ? Math.max(0.001, rawRadius) : 0.001;
+      const energy = Math.pow(1 - progress, 0.72);
+      const smooth = Math.sin(progress * Math.PI);
+      const alpha = Math.max(0, smooth * 0.5 * splashStrength * (0.75 + energy * 0.25));
       const timeSec = (now - start) / 1000;
       const colorA = mixColor(baseColor, blueColor, 0.55, alpha);
       const colorB = mixColor(baseColor, altColor, 0.65, alpha * 0.85);
@@ -110,7 +111,7 @@ export const SplashCursor = ({
       const cy = canvas.clientHeight / 2;
       ctx.globalCompositeOperation = "screen";
 
-      const coreGradient = ctx.createRadialGradient(cx, cy, radius * 0.1, cx, cy, radius * 1.2);
+      const coreGradient = ctx.createRadialGradient(cx, cy, safeRadius * 0.1, cx, cy, safeRadius * 1.2);
       coreGradient.addColorStop(0, mixColor(baseColor, blueColor, 0.35, alpha * 0.7));
       coreGradient.addColorStop(0.35, colorA);
       coreGradient.addColorStop(0.65, colorB);
@@ -121,7 +122,7 @@ export const SplashCursor = ({
       const ringCount = 3;
       for (let i = 0; i < ringCount; i += 1) {
         const wobble = 0.04 * Math.sin(timeSec * 1.2 + i * 1.4);
-        const ringRadius = radius * (0.65 + i * 0.15 + wobble);
+        const ringRadius = safeRadius * (0.65 + i * 0.15 + wobble);
         const ringWidth = Math.max(18, ringRadius * 0.12);
         const ringAlpha = alpha * (0.72 - i * 0.12);
         const ringGradient = ctx.createRadialGradient(
@@ -143,10 +144,10 @@ export const SplashCursor = ({
       const wispCount = 4;
       for (let i = 0; i < wispCount; i += 1) {
         const angle = timeSec * 0.7 + i * (Math.PI * 2 / wispCount);
-        const offset = radius * (0.12 + 0.05 * Math.sin(timeSec * 2 + i));
+        const offset = safeRadius * (0.12 + 0.05 * Math.sin(timeSec * 2 + i));
         const ox = Math.cos(angle) * offset;
         const oy = Math.sin(angle) * offset;
-        const wispRadius = radius * (0.55 + 0.08 * Math.cos(timeSec * 1.4 + i));
+        const wispRadius = safeRadius * (0.55 + 0.08 * Math.cos(timeSec * 1.4 + i));
         const wispAlpha = alpha * 0.26;
         const wispGradient = ctx.createRadialGradient(
           cx + ox,
@@ -170,10 +171,10 @@ export const SplashCursor = ({
         const impactGradient = ctx.createRadialGradient(
           cx,
           cy,
-          impactRadius - impactWidth,
+          Math.max(0, impactRadius - impactWidth),
           cx,
           cy,
-          impactRadius + impactWidth,
+          Math.max(0.001, impactRadius + impactWidth),
         );
         impactGradient.addColorStop(0, "rgba(0,0,0,0)");
         impactGradient.addColorStop(0.45, mixColor(blueColor, altColor, 0.6, impact * 0.28));
@@ -201,7 +202,7 @@ export const SplashCursor = ({
       window.removeEventListener("resize", resize);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [active, reduceMotion, SPLAT_FORCE, SPLAT_RADIUS, BACK_COLOR, TRANSPARENT, COLOR_UPDATE_SPEED, DURATION]);
+  }, [active, reduceMotion, SPLAT_FORCE, SPLAT_RADIUS, BACK_COLOR, TRANSPARENT, COLOR_UPDATE_SPEED, DURATION, onComplete]);
 
   return (
     <div className={styles.splashRoot} data-active={visible ? "true" : "false"} aria-hidden>

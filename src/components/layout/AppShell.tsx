@@ -13,7 +13,6 @@ import { AmbientGrid } from "@/components/ui/ambient-grid";
 import { ScanSweep } from "@/components/ui/scan-sweep";
 import { ColorBends } from "@/components/ui/color-bends";
 import { SoundProvider } from "@/components/ui/ui-sound";
-import { StickyCta } from "@/components/ui/sticky-cta";
 import { PerformanceToggle } from "@/components/ui/performance-toggle";
 import { usePerformanceMode } from "@/hooks/usePerformanceMode";
 
@@ -84,7 +83,6 @@ export const AppShell = ({ children }: AppShellProps) => {
               {isHome ? <HomeFullscreen>{children}</HomeFullscreen> : <MainShell>{children}</MainShell>}
             </PageTransition>
           </div>
-          <StickyCta />
           <PerformanceToggle />
         </NavMorphProvider>
       </SoundProvider>

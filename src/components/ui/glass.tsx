@@ -38,7 +38,7 @@ export const GlassButton = forwardRef<HTMLButtonElement | HTMLAnchorElement, But
     ref,
   ) {
     const base =
-      "glass-surface inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-transform duration-200";
+      "glass-surface inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300";
     const variants: Record<typeof variant, string> = {
       primary:
         "bg-gradient-to-r from-[color:var(--accent-blue)] via-[color:var(--accent-cyan)] to-[color:var(--accent-mint)] text-white shadow-[0_18px_38px_-18px_rgba(18,110,235,0.65)]",

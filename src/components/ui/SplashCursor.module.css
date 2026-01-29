@@ -4,6 +4,7 @@
   pointer-events: none;
   z-index: 200;
   opacity: 0;
+  transition: opacity 520ms ease;
 }
 
 .splashRoot[data-active="true"] {
@@ -17,7 +18,7 @@
     radial-gradient(140% 120% at 50% 45%, rgba(8, 18, 32, 0.25), rgba(3, 6, 14, 0.92)),
     linear-gradient(180deg, rgba(0, 0, 0, 0.82), rgba(2, 4, 10, 0.95));
   opacity: 1;
-  animation: splashShade 1.9s ease forwards;
+  animation: splashShade 2.4s ease forwards;
 }
 
 .splashCanvas {

@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useMemo, useRef } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { PAGE_FADE_DURATION } from "@/config/transitions";
 import { NAV_ITEMS } from "@/config/nav";
@@ -44,66 +44,53 @@ export const PageTransition = ({ children }: { children: ReactNode }) => {
 
   if (reduceMotion || lowPerf) {
     const reducedTransition = {
-      duration: Math.max(PAGE_FADE_DURATION, isHome ? 720 : 260) / 1000,
+      duration: Math.max(PAGE_FADE_DURATION, isHome ? 720 : 320) / 1000,
       ease: [0.22, 1, 0.36, 1],
     };
     return (
-      <AnimatePresence mode="wait">
+      <div className={styles.transitionRoot}>
         <motion.div
           key={pathname}
-          initial={{ opacity: 0 }}
+          initial={{ opacity: isHome ? 1 : 0.2 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
           transition={reducedTransition}
           style={{ willChange: "opacity" }}
         >
           {children}
         </motion.div>
-      </AnimatePresence>
+      </div>
     );
   }
 
-  const drift = isHome ? 0 : 10;
+  const drift = isHome ? 0 : 6;
   const transition = {
-    duration: Math.max(PAGE_FADE_DURATION, isHome ? 980 : 720) / 1000,
+    duration: Math.max(PAGE_FADE_DURATION, isHome ? 980 : 620) / 1000,
     ease: [0.22, 1, 0.36, 1],
   };
   const sheenDuration = Math.max(PAGE_FADE_DURATION, 960) / 1000;
-  const showSheen = !isHome && !lowPerf;
-  const showRipple = !lowPerf && !isHome;
+  const showSheen = false;
+  const showRipple = false;
+
+  const initialState = (() => {
+    if (transitionMeta.to === "/") {
+      return { opacity: 1 };
+    }
+    if (transitionMeta.from === "/") {
+      return { opacity: 0, y: 24, scale: 0.97 };
+    }
+    return {
+      opacity: 0.2,
+      y: transitionMeta.direction >= 0 ? drift : -drift,
+      scale: 0.995,
+    };
+  })();
 
   return (
-    <AnimatePresence mode={isHome ? "sync" : "wait"} custom={transitionMeta}>
+    <div className={styles.transitionRoot}>
       <motion.div
         key={pathname}
-        custom={transitionMeta}
-        initial={(meta) => {
-          if (meta.to === "/") {
-            return { opacity: 1 };
-          }
-          if (meta.from === "/") {
-            return { opacity: 0, y: 24, scale: 0.97 };
-          }
-          return {
-            opacity: 0,
-            y: meta.direction >= 0 ? drift : -drift,
-            scale: 0.995,
-          };
-        }}
+        initial={initialState}
         animate={isHome ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
-        exit={(meta) => {
-          if (meta.from === "/") {
-            return { opacity: 0, y: -18, scale: 1.03 };
-          }
-          if (meta.to === "/") {
-            return { opacity: 0 };
-          }
-          return {
-            opacity: 0,
-            y: meta.direction >= 0 ? -drift : drift,
-            scale: 0.995,
-          };
-        }}
         transition={transition}
         className={styles.transitionShell}
         style={{
@@ -136,6 +123,16 @@ export const PageTransition = ({ children }: { children: ReactNode }) => {
         )}
         {children}
       </motion.div>
-    </AnimatePresence>
+      {!isHome && !lowPerf && (
+        <motion.div
+          key={`veil-${pathname}`}
+          aria-hidden
+          className={styles.transitionVeil}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 0.18, 0] }}
+          transition={{ duration: transition.duration, ease: [0.22, 1, 0.36, 1], times: [0, 0.4, 1] }}
+        />
+      )}
+    </div>
   );
 };
