@@ -138,15 +138,19 @@ button,
   content: "";
 }
 
+.application-accordion > :not(summary) {
+  display: block;
+}
+
 .application-accordion__content {
   max-height: 0;
   opacity: 0;
-  transform: translateY(-18px);
+  transform: translateY(-14px);
   overflow: hidden;
   transition:
-    max-height 4200ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 2600ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 3200ms cubic-bezier(0.22, 1, 0.36, 1);
+    max-height 5200ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 3200ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 3600ms cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: 0ms, 0ms, 0ms;
   will-change: max-height, opacity, transform;
 }
@@ -158,10 +162,10 @@ button,
 }
 
 .application-accordion[open] .application-accordion__content {
-  max-height: 5200px;
+  max-height: 8000px;
   opacity: 1;
   transform: translateY(0);
-  transition-delay: 360ms, 360ms, 360ms;
+  transition-delay: 280ms, 280ms, 280ms;
 }
 
 .application-accordion {
