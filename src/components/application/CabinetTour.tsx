@@ -136,10 +136,11 @@ export const CabinetTour = () => {
                 >
                   <span
                     className={clsx(
-                      "flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--glass-stroke)] bg-[rgba(10,20,40,0.8)] shadow-[0_14px_36px_-18px_rgba(18,110,235,0.6)] transition",
+                      "cabinet-hotspot__ring relative flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--glass-stroke)] bg-[rgba(10,20,40,0.8)] shadow-[0_14px_36px_-18px_rgba(18,110,235,0.6)] transition",
                       isActive ? "scale-105" : "opacity-80",
                     )}
                   >
+                    <span className="cabinet-hotspot__pulse" aria-hidden="true" />
                     <span className="h-2.5 w-2.5 rounded-full bg-[color:var(--accent-cyan)] shadow-[0_0_12px_rgba(65,224,196,0.7)]" />
                   </span>
                   {isActive && (
