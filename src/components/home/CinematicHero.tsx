@@ -34,7 +34,10 @@ const PARALLAX_X = 34;
 const PARALLAX_Y = 28;
 const STAR_PARALLAX = 2.1;
 const STAR_BLUR = 14;
-const VIDEO_SOURCES = ["/video/ezgif-364514d4efc9a228.mp4"];
+const VIDEO_SOURCES = [
+  "/video/ezgif-364514d4efc9a228.mp4",
+  "/video/ezgif-364514d4efc9a228-rev.mp4",
+];
 const mulberry32 = (seed: number) => {
   let t = seed >>> 0;
   return () => {
