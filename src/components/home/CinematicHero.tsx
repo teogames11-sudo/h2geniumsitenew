@@ -29,7 +29,7 @@ const NAV_NADH_KEY = "nadh";
 const NAV_CABINETS_KEY = "cabinets";
 const ENABLE_NAV_MAGNET = false;
 const SPLASH_DURATION = 2800;
-const SPLASH_FORCE = 3200;
+const SPLASH_FORCE = 7200;
 const PARALLAX_X = 34;
 const PARALLAX_Y = 28;
 const STAR_PARALLAX = 2.1;
@@ -195,7 +195,7 @@ const CinematicHeroComponent = () => {
   const [introReady, setIntroReady] = useState(() => reduceMotion || lowPerf);
   const [splashDone, setSplashDone] = useState(() => reduceMotion || lowPerf);
   const starField = useMemo(() => (lowPerf ? BASE_STARFIELD : STARFIELD), [lowPerf]);
-  const splashColor = useMemo(() => ({ r: 0.32, g: 0.1, b: 1 }), []);
+  const splashColor = useMemo(() => ({ r: 0.6, g: 0.3, b: 1 }), []);
   const handleSplashComplete = useCallback(() => {
     setSplashDone(true);
     setIntroReady(true);
@@ -781,12 +781,12 @@ const CinematicHeroComponent = () => {
 
       <div className={styles.uiLayer}>
         {shouldAnimateIntro && !splashDone && (
-          <SplashCursor
-            active={!splashDone}
-            SPLAT_RADIUS={0.19}
-            SPLAT_FORCE={SPLASH_FORCE}
-            BACK_COLOR={splashColor}
-            COLOR_UPDATE_SPEED={14}
+            <SplashCursor
+              active={!splashDone}
+              SPLAT_RADIUS={0.24}
+              SPLAT_FORCE={SPLASH_FORCE}
+              BACK_COLOR={splashColor}
+              COLOR_UPDATE_SPEED={14}
             DURATION={SPLASH_DURATION}
             TRANSPARENT
             onComplete={handleSplashComplete}

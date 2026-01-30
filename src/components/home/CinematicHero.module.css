@@ -2,7 +2,8 @@
   position: relative;
   width: calc(100vw / var(--app-scale));
   min-width: calc(100vw / var(--app-scale));
-  height: calc(100vh / var(--app-scale));
+  height: calc(100svh / var(--app-scale));
+  height: calc(100dvh / var(--app-scale));
   min-height: calc(100svh / var(--app-scale));
   min-height: calc(100dvh / var(--app-scale));
   overflow: hidden;
