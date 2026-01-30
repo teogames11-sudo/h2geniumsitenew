@@ -139,37 +139,29 @@ button,
 }
 
 .application-accordion__content {
-  display: grid;
-  grid-template-rows: 0fr;
+  max-height: 0;
   opacity: 0;
+  transform: translateY(-18px);
+  overflow: hidden;
   transition:
-    grid-template-rows 3800ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 2400ms cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: 0ms, 0ms;
-  will-change: grid-template-rows, opacity;
+    max-height 4200ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 2600ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 3200ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: 0ms, 0ms, 0ms;
+  will-change: max-height, opacity, transform;
 }
 
 .application-accordion__inner {
   overflow: hidden;
-  opacity: 0;
-  transform: translateY(-18px);
-  transition:
-    transform 3000ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 2400ms cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: 0ms, 0ms;
-  will-change: transform, opacity;
+  opacity: 1;
+  transform: none;
 }
 
 .application-accordion[open] .application-accordion__content {
-  grid-template-rows: 1fr;
-  opacity: 1;
-  transition-delay: 320ms, 320ms;
-}
-
-.application-accordion[open] .application-accordion__inner {
+  max-height: 5200px;
   opacity: 1;
   transform: translateY(0);
-  transition-delay: 480ms, 480ms;
+  transition-delay: 360ms, 360ms, 360ms;
 }
 
 .application-accordion {
