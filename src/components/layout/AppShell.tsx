@@ -77,7 +77,7 @@ export const AppShell = ({ children }: AppShellProps) => {
             </>
           )}
           {!isHome && lowPerf && <AmbientGrid />}
-          <div className="relative z-10 flex min-h-screen flex-col">
+          <div className="relative z-10 flex min-h-screen min-h-[100svh] min-h-[100dvh] flex-col">
             <Header disableHeroMode={!isHome} />
             <PageTransition>
               {isHome ? <HomeFullscreen>{children}</HomeFullscreen> : <MainShell>{children}</MainShell>}

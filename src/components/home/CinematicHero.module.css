@@ -3022,6 +3022,13 @@
   }
 }
 
+@media (max-width: 767px) {
+  .sideLinkLeft,
+  .sideLinkRight {
+    display: none;
+  }
+}
+
 @media (pointer: coarse) and (prefers-reduced-motion: no-preference) {
   .skyLayer,
   .skyHalf {

@@ -891,6 +891,29 @@ button,
   }
 }
 
+@media (hover: none) and (pointer: coarse) {
+  :root {
+    --app-scale: 1;
+  }
+
+  html {
+    zoom: 1;
+  }
+
+  body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .full-bleed {
+    width: 100%;
+    left: 0;
+    right: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
 .nadh-sphere {
   isolation: isolate;
   background: radial-gradient(

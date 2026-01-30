@@ -128,7 +128,7 @@ export const GlassTabs = ({ tabs, initial, onChange, className }: GlassTabsProps
   return (
     <div
       className={clsx(
-        "glass-surface relative flex items-center gap-2 rounded-full border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/80 px-2 py-2 text-sm",
+        "glass-surface relative flex max-w-full items-center gap-2 overflow-x-auto rounded-full border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/80 px-2 py-2 text-sm",
         className,
       )}
     >
@@ -139,7 +139,7 @@ export const GlassTabs = ({ tabs, initial, onChange, className }: GlassTabsProps
             key={tab.id}
             onClick={() => handleChange(tab.id)}
             className={clsx(
-              "relative rounded-full px-4 py-1.5 font-semibold transition-colors",
+              "relative shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 font-semibold transition-colors",
               isActive ? "text-[color:var(--text)]" : "text-[color:var(--muted)] hover:text-[color:var(--text)]",
             )}
           >
