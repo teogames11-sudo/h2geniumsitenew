@@ -35,8 +35,8 @@ const PARALLAX_Y = 28;
 const STAR_PARALLAX = 2.1;
 const STAR_BLUR = 14;
 const VIDEO_SOURCES = [
-  "/video/1 VID 4K.mp4",
   "/video/2 VID 4K.mp4",
+  "/video/kling_20260126_VIDEO_Image1_____610_0.mp4",
 ];
 const mulberry32 = (seed: number) => {
   let t = seed >>> 0;
@@ -247,6 +247,17 @@ const CinematicHeroComponent = () => {
     }
   }, [lowPerf, reduceMotion]);
 
+  const attemptPlay = useCallback(() => {
+    const active = videoRefs.current[activeSlot];
+    if (!active) return;
+    active.muted = true;
+    active.playsInline = true;
+    const playPromise = active.play();
+    if (playPromise?.catch) {
+      playPromise.catch(() => undefined);
+    }
+  }, [activeSlot]);
+
   useEffect(() => {
     if (prevLowPerfRef.current === lowPerf) return;
     prevLowPerfRef.current = lowPerf;
@@ -256,18 +267,35 @@ const CinematicHeroComponent = () => {
     }
     setVideoReady(false);
     setVideoState("enter");
-    const playActive = () => {
-      const active = videoRefs.current[activeSlot];
-      if (active && active.paused) {
-        const playPromise = active.play();
-        if (playPromise?.catch) {
-          playPromise.catch(() => undefined);
-        }
-      }
-    };
-    const raf = requestAnimationFrame(playActive);
+    const raf = requestAnimationFrame(attemptPlay);
     return () => cancelAnimationFrame(raf);
-  }, [activeSlot, lowPerf]);
+  }, [activeSlot, attemptPlay, lowPerf]);
+
+  useEffect(() => {
+    if (reduceMotion || lowPerf || !videoEnabled) return;
+    const active = videoRefs.current[activeSlot];
+    if (!active) return;
+    const handleCanPlay = () => attemptPlay();
+    const handleLoaded = () => attemptPlay();
+    const handleVisibility = () => {
+      if (!document.hidden) attemptPlay();
+    };
+    const unlockPlayback = () => attemptPlay();
+
+    active.addEventListener("canplay", handleCanPlay);
+    active.addEventListener("loadedmetadata", handleLoaded);
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pointerdown", unlockPlayback, { passive: true, once: true });
+    const raf = requestAnimationFrame(attemptPlay);
+
+    return () => {
+      active.removeEventListener("canplay", handleCanPlay);
+      active.removeEventListener("loadedmetadata", handleLoaded);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pointerdown", unlockPlayback);
+      cancelAnimationFrame(raf);
+    };
+  }, [activeSlot, attemptPlay, lowPerf, reduceMotion, videoEnabled]);
 
   useEffect(() => {
     if (reduceMotion || lowPerf) return;
