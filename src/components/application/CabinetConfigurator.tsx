@@ -91,9 +91,9 @@ export const CabinetConfigurator = () => {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
           <GlassBadge tone="mint">Конфигуратор</GlassBadge>
-          <h2 className="text-2xl font-semibold text-[color:var(--text)]">Конфигуратор кабинета и ROI</h2>
+          <h2 className="text-2xl font-semibold text-[color:var(--text)]">Конфигуратор кабинета</h2>
           <p className="max-w-2xl text-[color:var(--muted)]">
-            Заполните параметры потока и билета — получите ориентировочную конфигурацию и оценку окупаемости. Расчет без
+            Заполните параметры кабинета — получите ориентировочную конфигурацию и оценку окупаемости. Расчет без
             учета операционных расходов.
           </p>
         </div>
@@ -180,7 +180,7 @@ export const CabinetConfigurator = () => {
           </div>
 
           <div className="rounded-3xl border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/75 p-5 shadow-[var(--shadow-2)]">
-            <div className="text-xs font-semibold text-[color:var(--muted)]">Оценка ROI</div>
+            <div className="text-xs font-semibold text-[color:var(--muted)]">Оценка окупаемости</div>
             <div className="mt-2 text-2xl font-semibold text-[color:var(--text)]">
               {summary.monthlyRevenue > 0 ? `${formatNumber(summary.monthlyRevenue)} руб./мес` : "—"}
             </div>

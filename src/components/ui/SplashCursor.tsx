@@ -65,7 +65,7 @@ export const SplashCursor = ({
     if (!ctx) return;
 
     let raf = 0;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     const resize = () => {
       const { clientWidth, clientHeight } = canvas;
       canvas.width = Math.max(1, Math.floor(clientWidth * dpr));

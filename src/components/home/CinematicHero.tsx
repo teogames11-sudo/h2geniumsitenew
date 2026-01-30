@@ -28,8 +28,12 @@ const TITLE = `${TITLE_TOP} ${TITLE_BOTTOM}`;
 const NAV_NADH_KEY = "nadh";
 const NAV_CABINETS_KEY = "cabinets";
 const ENABLE_NAV_MAGNET = false;
-const SPLASH_DURATION = 2400;
-const SPLASH_FORCE = 3800;
+const SPLASH_DURATION = 2800;
+const SPLASH_FORCE = 3200;
+const PARALLAX_X = 34;
+const PARALLAX_Y = 28;
+const STAR_PARALLAX = 2.1;
+const STAR_BLUR = 14;
 const VIDEO_SOURCES = [
   "/video/1 VID 4K.mp4",
   "/video/2 VID 4K.mp4",
@@ -164,6 +168,7 @@ const CinematicHeroComponent = () => {
   const reduceMotion = useReducedMotion();
   const perfMode = usePerformanceMode();
   const lowPerf = perfMode === "low";
+  const videoEnabled = !lowPerf;
   const pathname = usePathname();
   const router = useRouter();
   const { startMorph, isMorphing } = useNavMorph();
@@ -180,6 +185,7 @@ const CinematicHeroComponent = () => {
   const pendingSwapRef = useRef<{ slot: number; index: number; prevSlot: number } | null>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [videoState, setVideoState] = useState<"enter" | "ready" | "exit">("enter");
+  const prevLowPerfRef = useRef(lowPerf);
   const starRefs = useRef<Map<string, HTMLSpanElement | null>>(new Map());
   const starOffsetsRef = useRef<Map<string, { x: number; y: number; blur: number }>>(new Map());
   const starPointerRef = useRef({ x: 0.5, y: 0.25 });
@@ -240,6 +246,28 @@ const CinematicHeroComponent = () => {
       setVideoReady(true);
     }
   }, [lowPerf, reduceMotion]);
+
+  useEffect(() => {
+    if (prevLowPerfRef.current === lowPerf) return;
+    prevLowPerfRef.current = lowPerf;
+    if (lowPerf) {
+      videoRefs.current.forEach((video) => video?.pause());
+      return;
+    }
+    setVideoReady(false);
+    setVideoState("enter");
+    const playActive = () => {
+      const active = videoRefs.current[activeSlot];
+      if (active && active.paused) {
+        const playPromise = active.play();
+        if (playPromise?.catch) {
+          playPromise.catch(() => undefined);
+        }
+      }
+    };
+    const raf = requestAnimationFrame(playActive);
+    return () => cancelAnimationFrame(raf);
+  }, [activeSlot, lowPerf]);
 
   useEffect(() => {
     if (reduceMotion || lowPerf) return;
@@ -313,8 +341,8 @@ const CinematicHeroComponent = () => {
       const rect = root.getBoundingClientRect();
       const dx = (event.clientX - (rect.left + rect.width / 2)) / rect.width;
       const dy = (event.clientY - (rect.top + rect.height / 2)) / rect.height;
-      targetX = dx * 7;
-      targetY = dy * 6;
+      targetX = dx * PARALLAX_X;
+      targetY = dy * PARALLAX_Y;
       if (!raf) {
         raf = requestAnimationFrame(tick);
       }
@@ -447,9 +475,9 @@ const CinematicHeroComponent = () => {
         const influence = Math.max(0, 1 - dist / star.influence);
         const nx = dist > 0 ? dx / dist : 1;
         const ny = dist > 0 ? dy / dist : 0;
-        const targetX = nx * influence * star.spread;
-        const targetY = ny * influence * star.spread;
-        const targetBlur = influence * 8;
+        const targetX = nx * influence * star.spread * STAR_PARALLAX;
+        const targetY = ny * influence * star.spread * STAR_PARALLAX;
+        const targetBlur = influence * STAR_BLUR;
         const prev = starOffsetsRef.current.get(star.id) ?? { x: 0, y: 0, blur: 0 };
         const lerp = 0.14;
         const next = {
@@ -652,38 +680,39 @@ const CinematicHeroComponent = () => {
       aria-label="HYDROGENIUM hero section"
     >
       <div className={styles.videoWrap} aria-hidden>
-        {[0, 1].map((slot) => {
-          const isActive = slot === activeSlot;
-          return (
-            <video
-              key={`hero-video-${slot}`}
-              ref={(node) => {
-                videoRefs.current[slot] = node;
-              }}
-              className={styles.heroVideo}
-              data-active={isActive ? "true" : "false"}
-              autoPlay={isActive}
-              muted
-              playsInline
-              preload={isActive ? "auto" : "none"}
-              disablePictureInPicture
-              controls={false}
-              src={slotSources[slot]}
-              onCanPlay={() => {
-                if (slot === activeSlot) setVideoReady(true);
-              }}
-              onEnded={() => {
-                if (slot !== activeSlot) return;
-                requestSwap();
-              }}
-              onPlaying={() => {
-                const pending = pendingSwapRef.current;
-                if (!pending || pending.slot !== slot) return;
-                finalizeSwap();
-              }}
-            />
-          );
-        })}
+        {videoEnabled &&
+          [0, 1].map((slot) => {
+            const isActive = slot === activeSlot;
+            return (
+              <video
+                key={`hero-video-${slot}`}
+                ref={(node) => {
+                  videoRefs.current[slot] = node;
+                }}
+                className={styles.heroVideo}
+                data-active={isActive ? "true" : "false"}
+                autoPlay={isActive}
+                muted
+                playsInline
+                preload={isActive ? "auto" : "none"}
+                disablePictureInPicture
+                controls={false}
+                src={slotSources[slot]}
+                onCanPlay={() => {
+                  if (slot === activeSlot) setVideoReady(true);
+                }}
+                onEnded={() => {
+                  if (slot !== activeSlot) return;
+                  requestSwap();
+                }}
+                onPlaying={() => {
+                  const pending = pendingSwapRef.current;
+                  if (!pending || pending.slot !== slot) return;
+                  finalizeSwap();
+                }}
+              />
+            );
+          })}
         <div className={styles.videoBloom} />
         <div className={styles.videoOverlay} />
         <div className={styles.videoVignette} />
@@ -890,7 +919,7 @@ const CinematicHeroComponent = () => {
               styles.navButton,
               styles.homeTile,
               styles.dockButton,
-              "inline-flex h-10 min-w-[108px] max-w-[170px] items-center justify-center px-3 text-center text-[10px] font-semibold leading-snug text-white/95 sm:h-11 sm:min-w-[120px] sm:max-w-[190px] sm:px-3.5 sm:text-[11px] lg:h-12 lg:min-w-[130px] lg:max-w-[210px] lg:px-4 lg:text-[12px]",
+              "inline-flex h-8 min-w-[86px] max-w-[140px] items-center justify-center px-2.5 text-center text-[9px] font-semibold leading-snug text-white/95 sm:h-10 sm:min-w-[108px] sm:max-w-[170px] sm:px-3 sm:text-[10px] md:h-11 md:min-w-[120px] md:max-w-[190px] md:px-3.5 md:text-[11px] lg:h-12 lg:min-w-[130px] lg:max-w-[210px] lg:px-4 lg:text-[12px]",
             )}
             activeClassName={clsx(styles.navButtonActive, "text-white")}
             inactiveClassName="text-white/95"

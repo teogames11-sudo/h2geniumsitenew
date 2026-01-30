@@ -90,44 +90,49 @@ const ROOMS: Room[] = [
 ];
 
 export const CabinetTour = () => {
-  const [activeId, setActiveId] = useState(ROOMS[0].id);
-  const activeRoom = useMemo(() => ROOMS.find((room) => room.id === activeId) ?? ROOMS[0], [activeId]);
-  const [activeHotspot, setActiveHotspot] = useState(activeRoom.hotspots[0]?.id ?? "");
+  const defaultRoom = useMemo(() => ROOMS.find((room) => room.id === "capsule") ?? ROOMS[0], []);
+  const [activeId, setActiveId] = useState(defaultRoom.id);
+  const activeRoom = useMemo(() => ROOMS.find((room) => room.id === activeId) ?? defaultRoom, [activeId, defaultRoom]);
+  const [activeHotspot, setActiveHotspot] = useState(defaultRoom.hotspots[0]?.id ?? "");
 
   useEffect(() => {
     setActiveHotspot(activeRoom.hotspots[0]?.id ?? "");
   }, [activeRoom.id]);
 
-  const hotspotData = activeRoom.hotspots.find((spot) => spot.id === activeHotspot) ?? activeRoom.hotspots[0];
-
   return (
     <section className="space-y-6">
       <Reveal className="space-y-2">
-        <GlassBadge tone="accent">3D/VR обзор</GlassBadge>
+        <GlassBadge tone="accent">Обзор кабинетов</GlassBadge>
         <h2 className="text-2xl font-semibold text-[color:var(--text)]">Погружение в кабинеты HYDROGENIUM</h2>
         <p className="max-w-3xl text-[color:var(--muted)]">
-          Переключайтесь между форматами и изучайте ключевые зоны кабинета. Реальный VR-тур доступен по запросу.
+          Переключайтесь между форматами и изучайте ключевые зоны кабинета.
         </p>
       </Reveal>
 
-      <Reveal className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <Reveal className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
         <GlassCard className="relative overflow-hidden border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/80 p-4 sm:p-6">
           <div className="relative overflow-hidden rounded-3xl border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/40">
-            <img src={activeRoom.image} alt={activeRoom.title} className="h-[320px] w-full object-cover sm:h-[360px]" />
+            <img
+              src={activeRoom.image}
+              alt={activeRoom.title}
+              className="h-[360px] w-full object-cover sm:h-[420px] lg:h-[480px]"
+            />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(5,12,24,0.2),rgba(5,12,24,0.7))]" />
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_60%_40%,rgba(47,183,255,0.18),transparent_55%)]" />
             {activeRoom.hotspots.map((spot) => {
               const isActive = spot.id === activeHotspot;
+              const isLower = spot.y > 60;
               return (
                 <button
                   key={spot.id}
                   type="button"
                   onClick={() => setActiveHotspot(spot.id)}
                   className={clsx(
-                    "absolute -translate-x-1/2 -translate-y-1/2",
+                    "group absolute -translate-x-1/2 -translate-y-1/2",
                     isActive ? "z-10" : "z-0",
                   )}
                   style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
+                  aria-pressed={isActive}
                 >
                   <span
                     className={clsx(
@@ -137,6 +142,23 @@ export const CabinetTour = () => {
                   >
                     <span className="h-2.5 w-2.5 rounded-full bg-[color:var(--accent-cyan)] shadow-[0_0_12px_rgba(65,224,196,0.7)]" />
                   </span>
+                  {isActive && (
+                    <span
+                      className={clsx(
+                        "pointer-events-none absolute left-1/2 w-[220px] -translate-x-1/2 rounded-2xl border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/90 p-3 text-left text-xs text-[color:var(--muted)] shadow-[var(--shadow-1)] backdrop-blur-2xl",
+                        isLower ? "bottom-full mb-3" : "top-full mt-3",
+                      )}
+                    >
+                      <span className="block text-sm font-semibold text-[color:var(--text)]">{spot.label}</span>
+                      <span className="mt-1 block leading-relaxed">{spot.text}</span>
+                      <span
+                        className={clsx(
+                          "absolute left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/90",
+                          isLower ? "bottom-0 translate-y-1/2" : "top-0 -translate-y-1/2",
+                        )}
+                      />
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -163,12 +185,8 @@ export const CabinetTour = () => {
 
         <div className="space-y-4">
           <GlassCard className="space-y-3 border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/85">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="text-lg font-semibold text-[color:var(--text)]">{activeRoom.title}</div>
-                <div className="text-xs text-[color:var(--muted)]">360° обзор по запросу</div>
-              </div>
-              <GlassBadge tone="mint">VR ready</GlassBadge>
+            <div>
+              <div className="text-lg font-semibold text-[color:var(--text)]">{activeRoom.title}</div>
             </div>
             <p className="text-sm text-[color:var(--muted)]">{activeRoom.description}</p>
             <div className="grid gap-3 sm:grid-cols-3">
@@ -184,16 +202,9 @@ export const CabinetTour = () => {
             </div>
           </GlassCard>
 
-          {hotspotData && (
-            <GlassCard className="space-y-2 border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/80">
-              <div className="text-sm font-semibold text-[color:var(--text)]">{hotspotData.label}</div>
-              <p className="text-sm text-[color:var(--muted)]">{hotspotData.text}</p>
-            </GlassCard>
-          )}
-
           <div className="grid gap-3 sm:grid-cols-2">
             <GlassButton as="a" href="/contacts#form" variant="primary" className="w-full justify-center">
-              Запросить VR-тур
+              Запросить презентацию
             </GlassButton>
             <GlassButton as="a" href="/contacts#form" variant="ghost" className="w-full justify-center">
               Запросить планировку
