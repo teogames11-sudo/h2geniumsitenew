@@ -34,10 +34,7 @@ const PARALLAX_X = 34;
 const PARALLAX_Y = 28;
 const STAR_PARALLAX = 2.1;
 const STAR_BLUR = 14;
-const VIDEO_SOURCES = [
-  "/video/2 VID 4K.mp4",
-  "/video/kling_20260126_VIDEO_Image1_____610_0.mp4",
-];
+const VIDEO_SOURCES = ["/video/ezgif-364514d4efc9a228.mp4"];
 const mulberry32 = (seed: number) => {
   let t = seed >>> 0;
   return () => {
@@ -298,6 +295,7 @@ const CinematicHeroComponent = () => {
   }, [activeSlot, attemptPlay, lowPerf, reduceMotion, videoEnabled]);
 
   useEffect(() => {
+    if (VIDEO_SOURCES.length < 2) return;
     if (reduceMotion || lowPerf) return;
     if (!videoReady) return;
     if (preloadTimeoutRef.current) {
@@ -722,9 +720,10 @@ const CinematicHeroComponent = () => {
                 autoPlay={isActive}
                 muted
                 playsInline
-                preload={isActive ? "auto" : "none"}
+                preload={VIDEO_SOURCES.length < 2 ? "auto" : isActive ? "auto" : "none"}
                 disablePictureInPicture
                 controls={false}
+                loop={VIDEO_SOURCES.length < 2}
                 src={slotSources[slot]}
                 onCanPlay={() => {
                   if (slot === activeSlot) setVideoReady(true);
