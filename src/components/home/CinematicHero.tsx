@@ -39,7 +39,7 @@ const VIDEO_SOURCES = [
   "/video/2 VID 4K.mp4",
 ];
 const VIDEO_SWAP_EARLY_SECONDS = 0.25;
-const VIDEO_WARMUP_SECONDS = 1.8;
+const VIDEO_WARMUP_SECONDS = 2.4;
 const SIDE_GOOEY_PARTICLE_COUNT = 12;
 const SIDE_GOOEY_PARTICLE_DISTANCES: [number, number] = [90, 8];
 const SIDE_GOOEY_PARTICLE_R = 90;
@@ -402,6 +402,33 @@ const CinematicHeroComponent = () => {
     const nextIndex = (videoIndex + 1) % VIDEO_SOURCES.length;
     const inactiveSlot = activeSlot === 0 ? 1 : 0;
     preloadTimeoutRef.current = window.setTimeout(() => {
+      const primeVideo = (video: HTMLVideoElement) => {
+        if (video.readyState < 2) {
+          video.load();
+        }
+        if (video.currentTime > 0.06) {
+          try {
+            video.currentTime = 0;
+          } catch {
+            // ignore seek errors
+          }
+        }
+        const pauseAfterFrame = () => {
+          video.pause();
+        };
+        const anyVideo = video as HTMLVideoElement & {
+          requestVideoFrameCallback?: (callback: (now: number, metadata?: unknown) => void) => number;
+        };
+        const playPromise = video.play();
+        if (playPromise?.catch) {
+          playPromise.catch(() => undefined);
+        }
+        if (anyVideo.requestVideoFrameCallback) {
+          anyVideo.requestVideoFrameCallback(() => pauseAfterFrame());
+        } else {
+          window.setTimeout(pauseAfterFrame, 120);
+        }
+      };
       setSlotSources((prev) => {
         if (prev[inactiveSlot] === VIDEO_SOURCES[nextIndex]) return prev;
         const next = [...prev];
@@ -414,15 +441,7 @@ const CinematicHeroComponent = () => {
         nextVideo.load();
         nextVideo.muted = true;
         nextVideo.playsInline = true;
-        const primePromise = nextVideo.play();
-        if (primePromise?.then) {
-          primePromise
-            .then(() => {
-              nextVideo.pause();
-              nextVideo.currentTime = 0;
-            })
-            .catch(() => undefined);
-        }
+        primeVideo(nextVideo);
       }
     }, 0);
     return () => {
@@ -587,18 +606,17 @@ const CinematicHeroComponent = () => {
     };
 
     if (nextVideo) {
-      nextVideo.currentTime = 0;
       const playPromise = nextVideo.play();
       if (playPromise?.catch) {
         playPromise.catch(() => undefined);
       }
-      if (nextVideo.readyState >= 2) {
+      if (nextVideo.readyState >= 3) {
         finalizeOnFrame(nextVideo);
       } else {
         nextVideo.addEventListener(
           "canplay",
           () => {
-            if (nextVideo.readyState >= 2) {
+            if (nextVideo.readyState >= 3) {
               finalizeOnFrame(nextVideo);
             }
           },
@@ -659,14 +677,27 @@ const CinematicHeroComponent = () => {
         if (nextVideo && nextVideo.readyState < 3) {
           nextVideo.muted = true;
           nextVideo.playsInline = true;
+          if (nextVideo.currentTime > 0.06) {
+            try {
+              nextVideo.currentTime = 0;
+            } catch {
+              // ignore seek errors
+            }
+          }
+          const pauseAfterFrame = () => {
+            nextVideo.pause();
+          };
+          const anyVideo = nextVideo as HTMLVideoElement & {
+            requestVideoFrameCallback?: (callback: (now: number, metadata?: unknown) => void) => number;
+          };
           const warmPromise = nextVideo.play();
-          if (warmPromise?.then) {
-            warmPromise
-              .then(() => {
-                nextVideo.pause();
-                nextVideo.currentTime = 0;
-              })
-              .catch(() => undefined);
+          if (warmPromise?.catch) {
+            warmPromise.catch(() => undefined);
+          }
+          if (anyVideo.requestVideoFrameCallback) {
+            anyVideo.requestVideoFrameCallback(() => pauseAfterFrame());
+          } else {
+            window.setTimeout(pauseAfterFrame, 120);
           }
         }
         warmedIndex = nextIndex;
