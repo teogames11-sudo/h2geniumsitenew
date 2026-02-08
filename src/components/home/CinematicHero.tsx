@@ -39,6 +39,7 @@ const VIDEO_SOURCES = [
   "/video/2 VID 4K.mp4",
 ];
 const VIDEO_SWAP_EARLY_SECONDS = 0.25;
+const VIDEO_WARMUP_SECONDS = 1.8;
 const SIDE_GOOEY_PARTICLE_COUNT = 12;
 const SIDE_GOOEY_PARTICLE_DISTANCES: [number, number] = [90, 8];
 const SIDE_GOOEY_PARTICLE_R = 90;
@@ -206,6 +207,7 @@ const CinematicHeroComponent = () => {
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
   const playRetryRef = useRef<number | null>(null);
   const swapScheduleRef = useRef<number | null>(null);
+  const frameRequestRef = useRef<{ id: number; video: HTMLVideoElement } | null>(null);
   const sideGooeyRefs = useRef<{ left: HTMLSpanElement | null; right: HTMLSpanElement | null }>({
     left: null,
     right: null,
@@ -255,6 +257,15 @@ const CinematicHeroComponent = () => {
     hidden: { opacity: 0, y: -14, scale: 0.98 },
     show: { opacity: 1, y: 0, scale: 1 },
   };
+
+  const cancelFrameRequest = useCallback(() => {
+    const current = frameRequestRef.current;
+    if (!current) return;
+    const { id, video } = current;
+    const anyVideo = video as HTMLVideoElement & { cancelVideoFrameCallback?: (handle: number) => void };
+    anyVideo.cancelVideoFrameCallback?.(id);
+    frameRequestRef.current = null;
+  }, []);
 
   useEffect(() => {
     if (reduceMotion || lowPerf) {
@@ -528,13 +539,14 @@ const CinematicHeroComponent = () => {
     };
   }, []);
 
-  const finalizeSwap = () => {
+  const finalizeSwap = useCallback(() => {
     const pending = pendingSwapRef.current;
     if (!pending) return;
     if (swapScheduleRef.current) {
       window.clearTimeout(swapScheduleRef.current);
       swapScheduleRef.current = null;
     }
+    cancelFrameRequest();
     const prevVideo = videoRefs.current[pending.prevSlot];
     if (prevVideo) {
       prevVideo.pause();
@@ -543,7 +555,7 @@ const CinematicHeroComponent = () => {
     setVideoIndex(pending.index);
     setVideoReady(true);
     pendingSwapRef.current = null;
-  };
+  }, [cancelFrameRequest]);
 
   const requestSwap = useCallback(() => {
     if (swapLockRef.current || pendingSwapRef.current) return;
@@ -558,21 +570,47 @@ const CinematicHeroComponent = () => {
     const nextVideo = videoRefs.current[nextSlot];
     pendingSwapRef.current = { slot: nextSlot, index: nextIndex, prevSlot: activeSlot };
 
+    const finalizeOnFrame = (video: HTMLVideoElement) => {
+      const anyVideo = video as HTMLVideoElement & {
+        requestVideoFrameCallback?: (callback: (now: number, metadata?: unknown) => void) => number;
+      };
+      if (anyVideo.requestVideoFrameCallback) {
+        const id = anyVideo.requestVideoFrameCallback(() => {
+          const pending = pendingSwapRef.current;
+          if (!pending || pending.slot !== nextSlot) return;
+          finalizeSwap();
+        });
+        frameRequestRef.current = { id, video };
+        return;
+      }
+      finalizeSwap();
+    };
+
     if (nextVideo) {
       nextVideo.currentTime = 0;
       const playPromise = nextVideo.play();
       if (playPromise?.catch) {
         playPromise.catch(() => undefined);
       }
-      if (!nextVideo.paused && nextVideo.readyState >= 2) {
-        finalizeSwap();
+      if (nextVideo.readyState >= 2) {
+        finalizeOnFrame(nextVideo);
+      } else {
+        nextVideo.addEventListener(
+          "canplay",
+          () => {
+            if (nextVideo.readyState >= 2) {
+              finalizeOnFrame(nextVideo);
+            }
+          },
+          { once: true },
+        );
       }
     }
 
     window.setTimeout(() => {
       swapLockRef.current = false;
     }, 160);
-  }, [activeSlot, videoIndex]);
+  }, [activeSlot, finalizeSwap, videoIndex]);
 
   const scheduleSwap = (video: HTMLVideoElement) => {
     if (VIDEO_SOURCES.length < 2) return;
@@ -593,14 +631,18 @@ const CinematicHeroComponent = () => {
         window.clearTimeout(swapScheduleRef.current);
         swapScheduleRef.current = null;
       }
+      cancelFrameRequest();
     };
-  }, []);
+  }, [cancelFrameRequest]);
 
   useEffect(() => {
     if (reduceMotion || lowPerf) return;
     if (VIDEO_SOURCES.length < 2) return;
     const active = videoRefs.current[activeSlot];
     if (!active) return;
+    const nextSlot = activeSlot === 0 ? 1 : 0;
+    const nextIndex = (videoIndex + 1) % VIDEO_SOURCES.length;
+    let warmedIndex = -1;
     let raf = 0;
     const tick = () => {
       if (!active || active.paused) {
@@ -611,7 +653,25 @@ const CinematicHeroComponent = () => {
         raf = requestAnimationFrame(tick);
         return;
       }
-      if (active.duration - active.currentTime <= VIDEO_SWAP_EARLY_SECONDS) {
+      const remaining = active.duration - active.currentTime;
+      if (remaining <= VIDEO_WARMUP_SECONDS && warmedIndex !== nextIndex) {
+        const nextVideo = videoRefs.current[nextSlot];
+        if (nextVideo && nextVideo.readyState < 3) {
+          nextVideo.muted = true;
+          nextVideo.playsInline = true;
+          const warmPromise = nextVideo.play();
+          if (warmPromise?.then) {
+            warmPromise
+              .then(() => {
+                nextVideo.pause();
+                nextVideo.currentTime = 0;
+              })
+              .catch(() => undefined);
+          }
+        }
+        warmedIndex = nextIndex;
+      }
+      if (remaining <= VIDEO_SWAP_EARLY_SECONDS) {
         requestSwap();
         return;
       }
