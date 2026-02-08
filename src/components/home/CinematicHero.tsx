@@ -27,7 +27,7 @@ const TITLE_BOTTOM = "HYDROGENIUM";
 const TITLE = `${TITLE_TOP} ${TITLE_BOTTOM}`;
 const NAV_NADH_KEY = "nadh";
 const NAV_CABINETS_KEY = "cabinets";
-const ENABLE_NAV_MAGNET = false;
+const ENABLE_NAV_MAGNET = true;
 const SPLASH_DURATION = 2800;
 const SPLASH_FORCE = 7200;
 const PARALLAX_X = 34;
@@ -38,6 +38,19 @@ const VIDEO_SOURCES = [
   "/video/1 VID 4K.mp4",
   "/video/2 VID 4K.mp4",
 ];
+const VIDEO_SWAP_EARLY_SECONDS = 0.25;
+const SIDE_GOOEY_PARTICLE_COUNT = 12;
+const SIDE_GOOEY_PARTICLE_DISTANCES: [number, number] = [90, 8];
+const SIDE_GOOEY_PARTICLE_R = 90;
+const SIDE_GOOEY_ANIMATION_TIME = 900;
+const SIDE_GOOEY_TIME_VARIANCE = 220;
+const SIDE_GOOEY_COLORS = [1, 2, 3, 4, 2, 3, 1, 4];
+const SIDE_GOOEY_HIDE_DELAY = 320;
+const noise = (n = 1) => n / 2 - Math.random() * n;
+const getXY = (distance: number, pointIndex: number, totalPoints: number) => {
+  const angle = ((360 + noise(8)) / totalPoints) * pointIndex * (Math.PI / 180);
+  return [distance * Math.cos(angle), distance * Math.sin(angle)];
+};
 const mulberry32 = (seed: number) => {
   let t = seed >>> 0;
   return () => {
@@ -90,6 +103,23 @@ const createStars = (
       opacity: Number(opacity.toFixed(2)),
     };
   });
+};
+
+const createSideParticle = (
+  i: number,
+  t: number,
+  d: [number, number],
+  r: number,
+) => {
+  const rotate = noise(r / 10);
+  return {
+    start: getXY(d[0], SIDE_GOOEY_PARTICLE_COUNT - i, SIDE_GOOEY_PARTICLE_COUNT),
+    end: getXY(d[1] + noise(7), SIDE_GOOEY_PARTICLE_COUNT - i, SIDE_GOOEY_PARTICLE_COUNT),
+    time: t,
+    scale: 1 + noise(0.2),
+    color: SIDE_GOOEY_COLORS[Math.floor(Math.random() * SIDE_GOOEY_COLORS.length)],
+    rotate: rotate > 0 ? (rotate + r / 20) * 10 : (rotate - r / 20) * 10,
+  };
 };
 
 const BASE_STARFIELD = [
@@ -174,11 +204,20 @@ const CinematicHeroComponent = () => {
   const { startMorph, isMorphing } = useNavMorph();
   const heroRef = useRef<HTMLElement | null>(null);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
+  const playRetryRef = useRef<number | null>(null);
+  const swapScheduleRef = useRef<number | null>(null);
+  const sideGooeyRefs = useRef<{ left: HTMLSpanElement | null; right: HTMLSpanElement | null }>({
+    left: null,
+    right: null,
+  });
+  const sideGooeyTimeouts = useRef<{ left: number[]; right: number[] }>({ left: [], right: [] });
+  const sideGooeyHideTimeouts = useRef<{ left?: number; right?: number }>({});
+  const sideGooeyLastBurstRef = useRef(0);
   const [activeSlot, setActiveSlot] = useState(0);
   const [videoIndex, setVideoIndex] = useState(0);
   const [slotSources, setSlotSources] = useState(() => [
     VIDEO_SOURCES[0],
-    VIDEO_SOURCES[0],
+    VIDEO_SOURCES[1] ?? VIDEO_SOURCES[0],
   ]);
   const preloadTimeoutRef = useRef<number | null>(null);
   const swapLockRef = useRef(false);
@@ -223,6 +262,21 @@ const CinematicHeroComponent = () => {
       setSplashDone(true);
     }
   }, [lowPerf, reduceMotion]);
+
+  useEffect(() => {
+    return () => {
+      (["left", "right"] as const).forEach((side) => {
+        const timeouts = sideGooeyTimeouts.current[side];
+        timeouts.forEach((id) => window.clearTimeout(id));
+        sideGooeyTimeouts.current[side] = [];
+        const hideId = sideGooeyHideTimeouts.current[side];
+        if (hideId) {
+          window.clearTimeout(hideId);
+          sideGooeyHideTimeouts.current[side] = undefined;
+        }
+      });
+    };
+  }, []);
 
   useEffect(() => {
     if (!shouldAnimateIntro || introReady) return;
@@ -298,6 +352,36 @@ const CinematicHeroComponent = () => {
   }, [activeSlot, attemptPlay, lowPerf, reduceMotion, videoEnabled]);
 
   useEffect(() => {
+    if (reduceMotion || lowPerf || !videoEnabled) return;
+    let attempts = 0;
+    const retry = () => {
+      const active = videoRefs.current[activeSlot];
+      if (!active) return;
+      attemptPlay();
+      if (!active.paused && active.readyState >= 2) {
+        if (playRetryRef.current) {
+          window.clearInterval(playRetryRef.current);
+          playRetryRef.current = null;
+        }
+        return;
+      }
+      attempts += 1;
+      if (attempts > 10 && playRetryRef.current) {
+        window.clearInterval(playRetryRef.current);
+        playRetryRef.current = null;
+      }
+    };
+    retry();
+    playRetryRef.current = window.setInterval(retry, 320);
+    return () => {
+      if (playRetryRef.current) {
+        window.clearInterval(playRetryRef.current);
+        playRetryRef.current = null;
+      }
+    };
+  }, [activeSlot, attemptPlay, lowPerf, reduceMotion, videoEnabled]);
+
+  useEffect(() => {
     if (VIDEO_SOURCES.length < 2) return;
     if (reduceMotion || lowPerf) return;
     if (!videoReady) return;
@@ -317,8 +401,19 @@ const CinematicHeroComponent = () => {
       if (nextVideo) {
         nextVideo.preload = "auto";
         nextVideo.load();
+        nextVideo.muted = true;
+        nextVideo.playsInline = true;
+        const primePromise = nextVideo.play();
+        if (primePromise?.then) {
+          primePromise
+            .then(() => {
+              nextVideo.pause();
+              nextVideo.currentTime = 0;
+            })
+            .catch(() => undefined);
+        }
       }
-    }, 600);
+    }, 0);
     return () => {
       if (preloadTimeoutRef.current) {
         window.clearTimeout(preloadTimeoutRef.current);
@@ -409,27 +504,37 @@ const CinematicHeroComponent = () => {
     const schedule = () => {
       clearIdle();
       if (idleTimer) window.clearTimeout(idleTimer);
-      idleTimer = window.setTimeout(setIdle, 5200);
+      idleTimer = window.setTimeout(setIdle, 30000);
     };
+    root.dataset.heroEngaged = "true";
     schedule();
-    const handleActivity = () => schedule();
+    const handleActivity = () => {
+      schedule();
+    };
     window.addEventListener("pointermove", handleActivity, { passive: true });
+    window.addEventListener("pointerdown", handleActivity, { passive: true });
     window.addEventListener("keydown", handleActivity);
     window.addEventListener("wheel", handleActivity, { passive: true });
     window.addEventListener("touchstart", handleActivity, { passive: true });
     return () => {
       if (idleTimer) window.clearTimeout(idleTimer);
       window.removeEventListener("pointermove", handleActivity);
+      window.removeEventListener("pointerdown", handleActivity);
       window.removeEventListener("keydown", handleActivity);
       window.removeEventListener("wheel", handleActivity);
       window.removeEventListener("touchstart", handleActivity);
       delete root.dataset.idle;
+      delete root.dataset.heroEngaged;
     };
   }, []);
 
   const finalizeSwap = () => {
     const pending = pendingSwapRef.current;
     if (!pending) return;
+    if (swapScheduleRef.current) {
+      window.clearTimeout(swapScheduleRef.current);
+      swapScheduleRef.current = null;
+    }
     const prevVideo = videoRefs.current[pending.prevSlot];
     if (prevVideo) {
       prevVideo.pause();
@@ -440,9 +545,13 @@ const CinematicHeroComponent = () => {
     pendingSwapRef.current = null;
   };
 
-  const requestSwap = () => {
+  const requestSwap = useCallback(() => {
     if (swapLockRef.current || pendingSwapRef.current) return;
     if (VIDEO_SOURCES.length < 2) return;
+    if (swapScheduleRef.current) {
+      window.clearTimeout(swapScheduleRef.current);
+      swapScheduleRef.current = null;
+    }
     swapLockRef.current = true;
     const nextIndex = (videoIndex + 1) % VIDEO_SOURCES.length;
     const nextSlot = activeSlot === 0 ? 1 : 0;
@@ -457,17 +566,62 @@ const CinematicHeroComponent = () => {
       }
       if (!nextVideo.paused && nextVideo.readyState >= 2) {
         finalizeSwap();
-      } else {
-        window.setTimeout(() => {
-          finalizeSwap();
-        }, 140);
       }
     }
 
     window.setTimeout(() => {
       swapLockRef.current = false;
     }, 160);
+  }, [activeSlot, videoIndex]);
+
+  const scheduleSwap = (video: HTMLVideoElement) => {
+    if (VIDEO_SOURCES.length < 2) return;
+    if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+    if (swapScheduleRef.current) {
+      window.clearTimeout(swapScheduleRef.current);
+    }
+    const delayMs = Math.max(0, (video.duration - VIDEO_SWAP_EARLY_SECONDS) * 1000);
+    swapScheduleRef.current = window.setTimeout(() => {
+      swapScheduleRef.current = null;
+      requestSwap();
+    }, delayMs);
   };
+
+  useEffect(() => {
+    return () => {
+      if (swapScheduleRef.current) {
+        window.clearTimeout(swapScheduleRef.current);
+        swapScheduleRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion || lowPerf) return;
+    if (VIDEO_SOURCES.length < 2) return;
+    const active = videoRefs.current[activeSlot];
+    if (!active) return;
+    let raf = 0;
+    const tick = () => {
+      if (!active || active.paused) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      if (!Number.isFinite(active.duration) || active.duration <= 0) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      if (active.duration - active.currentTime <= VIDEO_SWAP_EARLY_SECONDS) {
+        requestSwap();
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [activeSlot, lowPerf, reduceMotion, requestSwap]);
 
   useEffect(() => {
     const root = heroRef.current;
@@ -677,6 +831,125 @@ const CinematicHeroComponent = () => {
     }
   };
 
+  const clearSideHide = (side: "left" | "right") => {
+    const hideId = sideGooeyHideTimeouts.current[side];
+    if (hideId) {
+      window.clearTimeout(hideId);
+      sideGooeyHideTimeouts.current[side] = undefined;
+    }
+  };
+
+  const clearSideTimeouts = (side: "left" | "right") => {
+    const timeouts = sideGooeyTimeouts.current[side];
+    if (!timeouts.length) return;
+    timeouts.forEach((id) => window.clearTimeout(id));
+    sideGooeyTimeouts.current[side] = [];
+  };
+
+  const makeSideParticles = (side: "left" | "right", element: HTMLSpanElement) => {
+    const bubbleTime = SIDE_GOOEY_ANIMATION_TIME * 2 + SIDE_GOOEY_TIME_VARIANCE;
+    element.style.setProperty("--time", `${bubbleTime}ms`);
+
+    for (let i = 0; i < SIDE_GOOEY_PARTICLE_COUNT; i += 1) {
+      const t = SIDE_GOOEY_ANIMATION_TIME * 2 + noise(SIDE_GOOEY_TIME_VARIANCE * 2);
+      const p = createSideParticle(i, t, SIDE_GOOEY_PARTICLE_DISTANCES, SIDE_GOOEY_PARTICLE_R);
+      const timeoutId = window.setTimeout(() => {
+        if (!element.isConnected) return;
+        const particle = document.createElement("span");
+        const point = document.createElement("span");
+        particle.classList.add(styles.sideGooeyParticle);
+        particle.style.setProperty("--start-x", `${p.start[0]}px`);
+        particle.style.setProperty("--start-y", `${p.start[1]}px`);
+        particle.style.setProperty("--end-x", `${p.end[0]}px`);
+        particle.style.setProperty("--end-y", `${p.end[1]}px`);
+        particle.style.setProperty("--time", `${p.time}ms`);
+        particle.style.setProperty("--scale", `${p.scale}`);
+        particle.style.setProperty("--color", `var(--side-gooey-${p.color})`);
+        particle.style.setProperty("--rotate", `${p.rotate}deg`);
+
+        point.classList.add(styles.sideGooeyPoint);
+        particle.appendChild(point);
+        element.appendChild(particle);
+
+        const removeId = window.setTimeout(() => {
+          try {
+            if (particle.parentElement === element) {
+              element.removeChild(particle);
+            }
+          } catch {
+            // ignore
+          }
+        }, t);
+        sideGooeyTimeouts.current[side].push(removeId);
+      }, 30);
+      sideGooeyTimeouts.current[side].push(timeoutId);
+    }
+  };
+
+  const burstSideGooey = (side: "left" | "right") => {
+    const element = sideGooeyRefs.current[side];
+    if (!element) return;
+    clearSideHide(side);
+    element.dataset.visible = "true";
+    if (reduceMotion || lowPerf) {
+      return;
+    }
+    const now = performance.now();
+    if (now - sideGooeyLastBurstRef.current < 220) {
+      element.dataset.active = "true";
+      return;
+    }
+    sideGooeyLastBurstRef.current = now;
+    element.removeAttribute("data-active");
+    void element.offsetWidth;
+    element.dataset.active = "true";
+
+    const particles = element.querySelectorAll(`.${styles.sideGooeyParticle}`);
+    particles.forEach((particle) => {
+      try {
+        if (particle.parentElement === element) {
+          element.removeChild(particle);
+        }
+      } catch {
+        // ignore
+      }
+    });
+    clearSideTimeouts(side);
+    makeSideParticles(side, element);
+  };
+
+  const scheduleSideHide = (side: "left" | "right") => {
+    const element = sideGooeyRefs.current[side];
+    if (!element) return;
+    clearSideHide(side);
+    element.removeAttribute("data-active");
+    sideGooeyHideTimeouts.current[side] = window.setTimeout(() => {
+      element.removeAttribute("data-visible");
+      const particles = element.querySelectorAll(`.${styles.sideGooeyParticle}`);
+      particles.forEach((particle) => {
+        try {
+          if (particle.parentElement === element) {
+            element.removeChild(particle);
+          }
+        } catch {
+          // ignore
+        }
+      });
+      clearSideTimeouts(side);
+      sideGooeyHideTimeouts.current[side] = undefined;
+    }, SIDE_GOOEY_HIDE_DELAY);
+  };
+
+  const handleSideEnter = (key: string, side: "left" | "right") => {
+    handleSideHover(key);
+    burstSideGooey(side);
+  };
+
+  const handleSideLeave = (side: "left" | "right") => {
+    handleSideHover();
+    scheduleSideHide(side);
+  };
+
   const handleRipple = (event: ReactPointerEvent<HTMLElement>) => {
     const target = event.currentTarget;
     target.dataset.pressed = "true";
@@ -723,7 +996,7 @@ const CinematicHeroComponent = () => {
                 autoPlay={isActive}
                 muted
                 playsInline
-                preload={VIDEO_SOURCES.length < 2 ? "auto" : isActive ? "auto" : "none"}
+                preload="auto"
                 disablePictureInPicture
                 controls={false}
                 loop={VIDEO_SOURCES.length < 2}
@@ -731,9 +1004,22 @@ const CinematicHeroComponent = () => {
                 onCanPlay={() => {
                   if (slot === activeSlot) setVideoReady(true);
                 }}
+                onLoadedMetadata={(event) => {
+                  if (slot !== activeSlot) return;
+                  scheduleSwap(event.currentTarget);
+                }}
                 onEnded={() => {
                   if (slot !== activeSlot) return;
                   requestSwap();
+                }}
+                onTimeUpdate={(event) => {
+                  if (slot !== activeSlot) return;
+                  if (VIDEO_SOURCES.length < 2) return;
+                  const video = event.currentTarget;
+                  if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+                  if (video.duration - video.currentTime <= VIDEO_SWAP_EARLY_SECONDS) {
+                    requestSwap();
+                  }
                 }}
                 onPlaying={() => {
                   const pending = pendingSwapRef.current;
@@ -855,15 +1141,31 @@ const CinematicHeroComponent = () => {
             className={styles.sideLinkLeft}
             aria-label="NADH CLINIC"
             data-ui-sound="nav"
-            onPointerEnter={() => handleSideHover(NAV_NADH_KEY)}
-            onPointerLeave={() => handleSideHover()}
-            onFocus={() => handleSideHover(NAV_NADH_KEY)}
-            onBlur={() => handleSideHover()}
+            onPointerEnter={() => handleSideEnter(NAV_NADH_KEY, "left")}
+            onPointerLeave={() => handleSideLeave("left")}
+            onFocus={() => handleSideEnter(NAV_NADH_KEY, "left")}
+            onBlur={() => handleSideLeave("left")}
             onPointerDown={handleRipple}
             onClick={(event) => handleDirectNav(event, NAV_NADH_KEY, nadhHref)}
           >
             <div className={styles.sideObjectLeft} aria-hidden="true">
-              <span className={styles.capsuleCore} />
+              <span
+                className={styles.sideObjectGooey}
+                aria-hidden="true"
+                ref={(node) => {
+                  sideGooeyRefs.current.left = node;
+                }}
+              />
+              <span className={styles.sideObjectShell} aria-hidden="true" />
+              <span className={styles.sideObjectMedia}>
+                <span className={styles.sideObjectGrid} aria-hidden="true" />
+                <img
+                  src="/pngKOR1.png"
+                  alt=""
+                  className={styles.sideObjectImage}
+                  draggable={false}
+                />
+              </span>
             </div>
             <div className={styles.sideLabel}>NADH CLINIC</div>
           </Link>
@@ -881,51 +1183,36 @@ const CinematicHeroComponent = () => {
             className={styles.sideLinkRight}
             aria-label="Эпигенетическая коррекция"
             data-ui-sound="nav"
-            onPointerEnter={() => handleSideHover(NAV_CABINETS_KEY)}
-            onPointerLeave={() => handleSideHover()}
-            onFocus={() => handleSideHover(NAV_CABINETS_KEY)}
-            onBlur={() => handleSideHover()}
+            onPointerEnter={() => handleSideEnter(NAV_CABINETS_KEY, "right")}
+            onPointerLeave={() => handleSideLeave("right")}
+            onFocus={() => handleSideEnter(NAV_CABINETS_KEY, "right")}
+            onBlur={() => handleSideLeave("right")}
             onPointerDown={handleRipple}
             onClick={(event) => handleDirectNav(event, NAV_CABINETS_KEY, cabinetsHref)}
           >
             <div className={styles.sideObjectRight} aria-hidden="true">
-              <svg className={styles.starSvg} viewBox="0 0 200 200" role="presentation" aria-hidden="true">
-                <defs>
-                  <linearGradient id="heroStarStroke" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="rgba(120, 210, 255, 0.95)" />
-                    <stop offset="55%" stopColor="rgba(120, 140, 255, 0.75)" />
-                    <stop offset="100%" stopColor="rgba(170, 90, 255, 0.6)" />
-                  </linearGradient>
-                  <radialGradient id="heroStarGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="rgba(150, 220, 255, 0.9)" />
-                    <stop offset="55%" stopColor="rgba(120, 140, 255, 0.55)" />
-                    <stop offset="100%" stopColor="rgba(120, 60, 255, 0)" />
-                  </radialGradient>
-                </defs>
-              <circle cx="100" cy="100" r="72" fill="url(#heroStarGlow)" />
-              <polygon
-                className={styles.starStroke}
-                points="100,16 178,150 22,150"
-                fill="none"
-                stroke="url(#heroStarStroke)"
-                strokeWidth="2.6"
-                strokeLinejoin="round"
+              <span
+                className={styles.sideObjectGooey}
+                aria-hidden="true"
+                ref={(node) => {
+                  sideGooeyRefs.current.right = node;
+                }}
               />
-              <polygon
-                className={styles.starStroke}
-                points="100,184 178,50 22,50"
-                fill="none"
-                stroke="url(#heroStarStroke)"
-                strokeWidth="2.6"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div className={styles.sideLabelRu}>
-            ЭПИГЕНЕТИЧЕСКАЯ
-            <br />
-            КОРРЕКЦИЯ
-          </div>
+              <span className={styles.sideObjectShell} aria-hidden="true" />
+              <span className={styles.sideObjectMedia}>
+                <img
+                  src="/capsule_cut_trim_padded.png"
+                  alt=""
+                  className={clsx(styles.sideObjectImage, styles.sideObjectImageCrop)}
+                  draggable={false}
+                />
+              </span>
+            </div>
+            <div className={styles.sideLabelRu}>
+              ЭПИГЕНЕТИЧЕСКАЯ
+              <br />
+              КОРРЕКЦИЯ
+            </div>
           </Link>
         </motion.div>
 

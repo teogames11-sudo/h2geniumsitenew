@@ -15,9 +15,10 @@ export type SnapshotData = {
 };
 
 export type ProductContent = {
-  url: string;
+  url?: string;
   slug: string;
   title: string;
+  summary?: string;
   description?: string;
   images: string[];
   documents: { title: string; url: string }[];

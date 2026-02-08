@@ -6,6 +6,31 @@ import { notFound } from "next/navigation";
 import type { PageProps } from "next";
 import type { DocumentLink, ProductContent } from "@/types/content";
 
+const buildDescriptionBlocks = (description?: string) => {
+  if (!description) return [];
+  return description
+    .split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => {
+      const lines = block
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const isList = lines.length > 0 && lines.every((line) => line.startsWith("- "));
+      if (isList) {
+        return {
+          type: "list" as const,
+          items: lines.map((line) => line.replace(/^-\s*/, "")),
+        };
+      }
+      return {
+        type: "paragraph" as const,
+        text: lines.join(" "),
+      };
+    });
+};
+
 export default function ProductPage({ params }: PageProps<{ slug: string }>) {
   const { slug } = params;
   const product = (products as ProductContent[]).find((item) => item.slug === slug);
@@ -13,6 +38,8 @@ export default function ProductPage({ params }: PageProps<{ slug: string }>) {
     return notFound();
   }
 
+  const summary = product.summary ?? product.description;
+  const descriptionBlocks = buildDescriptionBlocks(product.description);
   const isPdf = (url: string) => url.toLowerCase().endsWith(".pdf");
 
   return (
@@ -20,27 +47,34 @@ export default function ProductPage({ params }: PageProps<{ slug: string }>) {
       <Reveal className="space-y-3">
         <GlassBadge tone="accent">Карточка товара</GlassBadge>
         <h1 className="text-3xl font-semibold text-[color:var(--text)]">{product.title}</h1>
-        {product.description ? (
-          <p className="text-[color:var(--muted)]">{product.description}</p>
+        {summary ? (
+          <p className="text-[color:var(--muted)]">{summary}</p>
         ) : (
           <p className="text-[color:var(--muted)]">Описание будет доступно после синхронизации.</p>
-        )}
-        {product.tags && product.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-[color:var(--muted)]">
-            {product.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/70 px-2.5 py-1 shadow-[var(--shadow-2)]"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
         )}
       </Reveal>
 
       <Reveal className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-        <GlassCard className="space-y-5">
+        <div className="space-y-4">
+          {descriptionBlocks.length > 0 && (
+            <GlassCard className="space-y-3">
+              <h2 className="text-xl font-semibold text-[color:var(--text)]">Описание</h2>
+              <div className="space-y-3 text-sm text-[color:var(--muted)]">
+                {descriptionBlocks.map((block, idx) =>
+                  block.type === "list" ? (
+                    <ul key={`list-${idx}`} className="list-disc space-y-2 pl-5">
+                      {block.items.map((item, itemIndex) => (
+                        <li key={`${idx}-${itemIndex}`}>{item}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p key={`p-${idx}`}>{block.text}</p>
+                  ),
+                )}
+              </div>
+            </GlassCard>
+          )}
+          <GlassCard className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-xl font-semibold text-[color:var(--text)]">3D/360 обзор</h2>
             <span className="text-xs font-semibold text-[color:var(--muted)]">Поверните модель мышью</span>
@@ -92,6 +126,7 @@ export default function ProductPage({ params }: PageProps<{ slug: string }>) {
             </div>
           )}
         </GlassCard>
+        </div>
 
         <div className="space-y-4">
           <GlassCard className="space-y-4">
