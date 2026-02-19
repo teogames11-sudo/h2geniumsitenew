@@ -5,6 +5,7 @@ import clsx from "clsx";
 import products from "@/content/products.json";
 import { GlassBadge, GlassButton, GlassCard, GlassInput, GlassTabs } from "@/components/ui/glass";
 import { Reveal } from "@/components/ui/reveal";
+import { EquipmentEcosystemSection } from "@/components/sections/EquipmentEcosystemSection";
 import type { ProductContent } from "@/types/content";
 
 export default function CatalogPage() {
@@ -235,6 +236,8 @@ export default function CatalogPage() {
           </div>
         </div>
       </div>
+
+      <EquipmentEcosystemSection />
     </div>
   );
 }

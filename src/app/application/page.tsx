@@ -2,6 +2,7 @@ import { GlassBadge } from "@/components/ui/glass";
 import { Reveal } from "@/components/ui/reveal";
 import { CabinetConfigurator } from "@/components/application/CabinetConfigurator";
 import { CabinetTour } from "@/components/application/CabinetTour";
+import { EnterpriseCabinetSection } from "@/components/sections/EnterpriseCabinetSection";
 
 const applications = [
   {
@@ -373,6 +374,8 @@ export default function ApplicationPage() {
           </div>
         </div>
       </div>
+
+      <EnterpriseCabinetSection />
     </div>
   );
 }

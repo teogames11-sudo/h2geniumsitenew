@@ -1,0 +1,166 @@
+.chartCard {
+  display: grid;
+  gap: 1.25rem;
+  overflow: hidden;
+}
+
+.chartWrap {
+  width: 100%;
+  min-height: 260px;
+  overflow-x: auto;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--glass-stroke) 70%, transparent);
+  background:
+    linear-gradient(150deg, rgba(8, 30, 52, 0.48), rgba(6, 22, 42, 0.28)),
+    radial-gradient(circle at 20% 12%, rgba(65, 224, 196, 0.14), transparent 45%),
+    radial-gradient(circle at 84% 82%, rgba(47, 183, 255, 0.2), transparent 42%);
+  padding: 1rem;
+}
+
+.chartSvg {
+  width: 100%;
+  min-width: 620px;
+  height: 250px;
+}
+
+.chartAxis {
+  stroke: rgba(164, 205, 236, 0.38);
+  stroke-width: 1.2;
+}
+
+.chartGridLine {
+  stroke: rgba(164, 205, 236, 0.12);
+  stroke-width: 1;
+}
+
+.chartTick {
+  fill: color-mix(in srgb, var(--muted) 92%, white 8%);
+  font-size: 11px;
+}
+
+.chartLabel {
+  fill: color-mix(in srgb, var(--text) 94%, white 6%);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chartTrack {
+  stroke: rgba(164, 205, 236, 0.25);
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.chartRange {
+  stroke: url(#enterpriseMetricGradient);
+  stroke-width: 11;
+  stroke-linecap: round;
+}
+
+.chartDot {
+  fill: rgba(198, 248, 255, 0.95);
+  stroke: rgba(20, 94, 126, 0.82);
+  stroke-width: 1.6;
+}
+
+.chartValue {
+  fill: color-mix(in srgb, var(--text) 90%, white 10%);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.kpiGrid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.kpiTile {
+  border: 1px solid color-mix(in srgb, var(--glass-stroke) 65%, transparent);
+  background: linear-gradient(160deg, rgba(12, 34, 58, 0.75), rgba(8, 24, 42, 0.42));
+  border-radius: 1rem;
+  padding: 0.85rem 0.95rem;
+  box-shadow: 0 16px 28px -24px rgba(22, 112, 170, 0.7);
+}
+
+.kpiLabel {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.kpiValue {
+  margin-top: 0.3rem;
+  color: var(--text);
+  font-size: clamp(1.05rem, 2vw, 1.5rem);
+  font-weight: 700;
+}
+
+.roadmap {
+  display: grid;
+  gap: 1rem;
+  border-radius: 1.75rem;
+  border: 1px solid color-mix(in srgb, var(--glass-stroke) 68%, transparent);
+  background:
+    linear-gradient(155deg, rgba(8, 28, 48, 0.8), rgba(8, 28, 48, 0.56)),
+    radial-gradient(circle at 9% 16%, rgba(47, 183, 255, 0.15), transparent 38%),
+    radial-gradient(circle at 88% 78%, rgba(65, 224, 196, 0.16), transparent 42%);
+  padding: clamp(1rem, 2.8vw, 1.6rem);
+  box-shadow: var(--shadow-2);
+}
+
+.timelineRail {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.timelineTrack {
+  position: absolute;
+  inset: 0;
+  background: rgba(164, 205, 236, 0.3);
+}
+
+.timelineFill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transition: transform 0.22s ease-out;
+  background: linear-gradient(90deg, rgba(65, 224, 196, 0.92), rgba(47, 183, 255, 0.94));
+}
+
+.phaseGrid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.phaseCard {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--glass-stroke) 64%, transparent);
+  background: linear-gradient(145deg, rgba(12, 32, 56, 0.7), rgba(9, 24, 44, 0.45));
+  padding: 0.9rem 0.95rem;
+}
+
+.phaseIndex {
+  display: inline-flex;
+  margin-bottom: 0.45rem;
+  border-radius: 999px;
+  padding: 0.16rem 0.62rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(214, 248, 255, 0.96);
+  background: linear-gradient(90deg, rgba(47, 183, 255, 0.38), rgba(65, 224, 196, 0.38));
+}
+
+.fallback {
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timelineFill {
+    transition: none;
+  }
+}
+

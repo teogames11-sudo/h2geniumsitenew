@@ -1,0 +1,91 @@
+.grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.card {
+  height: 100%;
+  border-radius: 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--glass-stroke) 74%, transparent);
+  background:
+    linear-gradient(150deg, rgba(12, 36, 58, 0.74), rgba(8, 26, 44, 0.48)),
+    radial-gradient(circle at 12% 12%, rgba(47, 183, 255, 0.18), transparent 42%);
+  padding: 0.85rem;
+  box-shadow: 0 16px 28px -24px rgba(21, 112, 176, 0.92);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.purity {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(220, 252, 255, 0.97);
+  background: linear-gradient(120deg, rgba(47, 183, 255, 0.86), rgba(65, 224, 196, 0.84));
+}
+
+.specList {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.specList strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.gaugeWrap {
+  margin-top: 0.75rem;
+}
+
+.gaugeLabel {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.gaugeTrack {
+  position: relative;
+  height: 0.55rem;
+  margin-top: 0.45rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(162, 202, 235, 0.25);
+}
+
+.gaugeFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(65, 224, 196, 0.9), rgba(47, 183, 255, 0.94));
+  transition: width 0.45s ease;
+}
+
+.gaugeTicks {
+  margin-top: 0.35rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: color-mix(in srgb, var(--muted) 88%, white 12%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaugeFill {
+    transition: none;
+  }
+}
+

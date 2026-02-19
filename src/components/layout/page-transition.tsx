@@ -41,20 +41,19 @@ export const PageTransition = ({ children }: { children: ReactNode }) => {
     prevPathRef.current = pathname;
   }, [pathname]);
 
-
   if (reduceMotion || lowPerf) {
     const reducedTransition = {
-      duration: Math.max(PAGE_FADE_DURATION, isHome ? 720 : 320) / 1000,
+      duration: Math.max(PAGE_FADE_DURATION * 0.58, isHome ? 420 : 240) / 1000,
       ease: [0.22, 1, 0.36, 1],
     };
     return (
       <div className={styles.transitionRoot}>
         <motion.div
           key={pathname}
-          initial={{ opacity: isHome ? 1 : 0.2 }}
-          animate={{ opacity: 1 }}
+          initial={{ opacity: isHome ? 0.35 : 0.2 }}
+          animate={{ opacity: 1, filter: "blur(0px)" }}
           transition={reducedTransition}
-          style={{ willChange: "opacity" }}
+          style={{ willChange: "opacity, filter" }}
         >
           {children}
         </motion.div>
@@ -62,9 +61,9 @@ export const PageTransition = ({ children }: { children: ReactNode }) => {
     );
   }
 
-  const drift = isHome ? 0 : 6;
+  const drift = isHome ? 0 : 10;
   const transition = {
-    duration: Math.max(PAGE_FADE_DURATION, isHome ? 980 : 620) / 1000,
+    duration: Math.max(PAGE_FADE_DURATION, isHome ? 760 : 520) / 1000,
     ease: [0.22, 1, 0.36, 1],
   };
   const sheenDuration = Math.max(PAGE_FADE_DURATION, 960) / 1000;
@@ -73,15 +72,16 @@ export const PageTransition = ({ children }: { children: ReactNode }) => {
 
   const initialState = (() => {
     if (transitionMeta.to === "/") {
-      return { opacity: 1 };
+      return { opacity: 0.36, scale: 1.01, filter: "blur(6px)" };
     }
     if (transitionMeta.from === "/") {
-      return { opacity: 0, y: 24, scale: 0.97 };
+      return { opacity: 0, y: 18, scale: 0.985, filter: "blur(8px)" };
     }
     return {
-      opacity: 0.2,
+      opacity: 0.08,
       y: transitionMeta.direction >= 0 ? drift : -drift,
-      scale: 0.995,
+      scale: 0.994,
+      filter: "blur(5px)",
     };
   })();
 
@@ -90,11 +90,11 @@ export const PageTransition = ({ children }: { children: ReactNode }) => {
       <motion.div
         key={pathname}
         initial={initialState}
-        animate={isHome ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+        animate={isHome ? { opacity: 1, scale: 1, filter: "blur(0px)" } : { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
         transition={transition}
         className={styles.transitionShell}
         style={{
-          willChange: isHome ? "opacity" : "transform, opacity",
+          willChange: "transform, opacity, filter",
           backfaceVisibility: "hidden",
           transformOrigin: "50% 45%",
           transformPerspective: 1200,

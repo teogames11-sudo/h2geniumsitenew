@@ -53,6 +53,20 @@ export const Header = ({ disableHeroMode = false }: HeaderProps) => {
   }, [pathname]);
 
   useEffect(() => {
+    if (!menuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleEsc);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
     if (!SHOW_HOME_3D_TREE) return;
     const idleCb: typeof window.requestIdleCallback =
       // @ts-expect-error - not available in all browsers
@@ -124,7 +138,7 @@ export const Header = ({ disableHeroMode = false }: HeaderProps) => {
           {isHome && (
             <Link
               href="/"
-              aria-label="HYDROGENIUM — на главную"
+              aria-label="HYDROGENIUM - на главную"
               className={clsx(
                 glassHeader,
                 "absolute left-0 top-0 flex h-[72px] min-w-0 shrink-0 items-center justify-center rounded-full px-3.5 sm:h-[82px] sm:px-4.5 lg:h-[88px] lg:px-5.5",
@@ -174,7 +188,7 @@ export const Header = ({ disableHeroMode = false }: HeaderProps) => {
               )}
               onPointerDown={handleMenuPointerDown}
               onClick={handleMenuClick}
-              aria-label={menuOpen ? "Закрыть меню" : "Открыть меню"}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
               type="button"
             >
               {menuOpen ? <X size={18} /> : <Menu size={18} />}
@@ -185,46 +199,80 @@ export const Header = ({ disableHeroMode = false }: HeaderProps) => {
 
       <AnimatePresence>
         {menuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.25 }}
-            className="xl:hidden"
-          >
-            <div className="mx-4 mb-4 rounded-3xl border border-[color:var(--glass-stroke)] bg-[color:var(--glass-bg)]/95 p-4 shadow-[0_18px_50px_-18px_rgba(0,0,0,0.28),0_8px_24px_-12px_rgba(0,0,0,0.18)] backdrop-blur-2xl">
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {NAV_ITEMS.map((item) => {
-                  const active = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMenuOpen(false)}
-                      data-ui-sound="nav"
-                      className={clsx(
-                        "whitespace-nowrap rounded-2xl px-3 py-2 text-sm font-semibold text-[color:var(--muted)] transition-colors hover:text-[color:var(--text)]",
-                        active && "bg-[color:var(--glass-bg)]/80 text-white",
-                      )}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
+          <>
+            <motion.button
+              type="button"
+              aria-label="Close menu"
+              className="mobile-menu-backdrop xl:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              onClick={() => setMenuOpen(false)}
+            />
+            <motion.aside
+              initial={{ opacity: 0, x: -34, y: -10, scale: 0.95, filter: "blur(10px)" }}
+              animate={{ opacity: 1, x: 0, y: 0, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, x: -24, y: -8, scale: 0.98, filter: "blur(8px)" }}
+              transition={{ duration: 0.44, ease: [0.22, 1, 0.36, 1] }}
+              className="mobile-menu-panel xl:hidden"
+            >
+              <div className="mobile-menu-content p-4 sm:p-5">
+                <div className="mobile-menu-head mb-3 flex items-center justify-between gap-3">
+                  <span className="mobile-menu-title text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70">
+                    Navigation
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen(false)}
+                    className="mobile-menu-close inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/16"
+                    aria-label="Close menu"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {NAV_ITEMS.map((item, index) => {
+                    const active = pathname === item.href;
+                    return (
+                      <motion.div
+                        key={item.href}
+                        initial={{ opacity: 0, x: -12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -8 }}
+                        transition={{ duration: 0.28, delay: 0.04 * Math.min(8, index), ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <Link
+                          href={item.href}
+                          onClick={() => setMenuOpen(false)}
+                          data-ui-sound="nav"
+                          className={clsx(
+                            "mobile-menu-link rounded-2xl border border-transparent bg-white/[0.03] px-3.5 py-2.5 text-sm font-semibold text-[color:var(--muted)] transition-all",
+                            "hover:border-white/20 hover:bg-white/[0.08] hover:text-white",
+                            active && "mobile-menu-link-active border-[rgba(140,225,255,0.45)] bg-[rgba(100,185,255,0.18)] text-white shadow-[0_10px_28px_-16px_rgba(90,180,255,0.75)]",
+                          )}
+                        >
+                          {item.label}
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4">
+                  <GlassButton
+                    as="a"
+                    href="/contacts#form"
+                    className="mobile-menu-cta w-full justify-center bg-gradient-to-r from-[color:var(--accent-blue)] via-[color:var(--accent-cyan)] to-[color:var(--accent-mint)]"
+                    variant="primary"
+                    data-ui-sound="cta"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Оставить заявку
+                  </GlassButton>
+                </div>
               </div>
-              <div className="mt-3">
-                <GlassButton
-                  as="a"
-                  href="/contacts#form"
-                  className="w-full justify-center bg-gradient-to-r from-[color:var(--accent-blue)] via-[color:var(--accent-cyan)] to-[color:var(--accent-mint)]"
-                  variant="primary"
-                  data-ui-sound="cta"
-                >
-                  Оставить заявку
-                </GlassButton>
-              </div>
-            </div>
-          </motion.div>
+            </motion.aside>
+          </>
         )}
       </AnimatePresence>
     </header>

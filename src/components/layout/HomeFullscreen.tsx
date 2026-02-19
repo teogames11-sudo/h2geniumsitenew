@@ -50,11 +50,11 @@ export const HomeFullscreen = ({ children }: HomeFullscreenProps) => {
   return (
     <div
       ref={wrapperRef}
-      className="fixed left-1/2 top-0 z-10 min-h-[100svh] min-h-[100dvh] overflow-hidden"
+      className="fixed inset-y-0 left-1/2 z-10 overflow-hidden"
       style={{
         width: "calc(100vw / var(--app-scale))",
-        height: "calc(100dvh / var(--app-scale))",
-        minHeight: "calc(100svh / var(--app-scale))",
+        height: "calc((100dvh + env(safe-area-inset-top) + env(safe-area-inset-bottom)) / var(--app-scale))",
+        minHeight: "calc((100svh + env(safe-area-inset-top) + env(safe-area-inset-bottom)) / var(--app-scale))",
         transform: "translateX(-50%)",
       }}
     >

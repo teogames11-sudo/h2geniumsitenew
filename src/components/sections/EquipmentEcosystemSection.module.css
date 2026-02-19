@@ -1,0 +1,119 @@
+.section {
+  margin-top: 1.9rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.heroWrap {
+  margin-top: 0.2rem;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.8rem;
+  border: 1px solid color-mix(in srgb, var(--glass-stroke) 74%, transparent);
+  background:
+    linear-gradient(150deg, rgba(8, 28, 48, 0.84), rgba(8, 26, 44, 0.58)),
+    radial-gradient(circle at 15% 12%, rgba(47, 183, 255, 0.2), transparent 42%),
+    radial-gradient(circle at 84% 82%, rgba(65, 224, 196, 0.2), transparent 42%);
+  box-shadow: var(--shadow-2);
+}
+
+.heroGlow {
+  position: absolute;
+  inset: -20% -10%;
+  background:
+    radial-gradient(circle, rgba(47, 183, 255, 0.08), transparent 45%),
+    radial-gradient(circle at 70% 30%, rgba(65, 224, 196, 0.1), transparent 42%);
+  animation: glowDrift 16s linear infinite;
+  pointer-events: none;
+}
+
+.heroContent {
+  position: relative;
+  display: grid;
+  gap: 0.9rem;
+  padding: clamp(1.05rem, 2.8vw, 1.85rem);
+}
+
+.blockCard {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.cols {
+  display: grid;
+  gap: 0.95rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.itemCard {
+  border-radius: 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--glass-stroke) 72%, transparent);
+  background: linear-gradient(150deg, rgba(10, 30, 50, 0.68), rgba(8, 24, 42, 0.4));
+  padding: 0.72rem 0.78rem;
+}
+
+.benefits {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.benefits li {
+  position: relative;
+  padding-left: 1rem;
+}
+
+.benefits li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.44rem;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: linear-gradient(120deg, rgba(47, 183, 255, 0.9), rgba(65, 224, 196, 0.87));
+  box-shadow: 0 0 0 4px rgba(47, 183, 255, 0.1);
+}
+
+.newsGrid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.newsItem {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--glass-stroke) 72%, transparent);
+  background:
+    linear-gradient(140deg, rgba(10, 32, 56, 0.75), rgba(8, 24, 44, 0.45)),
+    radial-gradient(circle at 15% 12%, rgba(65, 224, 196, 0.16), transparent 40%);
+  padding: 0.78rem 0.85rem;
+}
+
+.fallback {
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroGlow {
+    animation: none;
+  }
+}
+
+@keyframes glowDrift {
+  0% {
+    transform: translate3d(-2%, -3%, 0);
+  }
+  50% {
+    transform: translate3d(2%, 2%, 0);
+  }
+  100% {
+    transform: translate3d(-2%, -3%, 0);
+  }
+}
+

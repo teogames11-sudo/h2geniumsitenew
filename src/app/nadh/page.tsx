@@ -3,6 +3,7 @@
 import { GlassBadge, GlassButton, GlassCard } from "@/components/ui/glass";
 import { Reveal } from "@/components/ui/reveal";
 import { NadhRouter } from "@/components/home/nadh-router";
+import { NadhInterventionsSection } from "@/components/sections/NadhInterventionsSection";
 
 const transdermalBenefits = [
   {
@@ -145,6 +146,8 @@ export default function NadhPage() {
           </div>
         </GlassCard>
       </Reveal>
+
+      <NadhInterventionsSection />
     </div>
   );
 }

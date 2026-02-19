@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { useReducedMotion } from "framer-motion";
 import clsx from "clsx";
 import { GlassBadge, GlassCard } from "@/components/ui/glass";
 import { Reveal } from "@/components/ui/reveal";
 import Galaxy from "@/components/ui/Galaxy";
 import { NadhEnergyModel } from "@/components/home/NadhEnergyModel";
+import styles from "./nadh-router.module.css";
 
 type Bubble = {
   id: string;
@@ -22,7 +23,91 @@ type Bubble = {
   blur: number;
 };
 
+type FactNode = {
+  id: string;
+  title: string;
+  summary: string;
+  angle: number;
+  ring: number;
+  duration: number;
+  delay: number;
+  reverse: boolean;
+};
+
 type NadhRouterProps = { wide?: boolean; disableReveal?: boolean };
+
+const NADH_FACTS: FactNode[] = [
+  {
+    id: "transport",
+    title: "Перенос электронов",
+    summary: "NADH участвует в переносе электронов в дыхательной цепи митохондрий.",
+    angle: -80,
+    ring: 0.98,
+    duration: 43,
+    delay: -5,
+    reverse: false,
+  },
+  {
+    id: "atp",
+    title: "Синтез АТФ",
+    summary: "Через дыхательную цепь поддерживается выработка АТФ - базовой клеточной энергии.",
+    angle: -18,
+    ring: 1.05,
+    duration: 39,
+    delay: -11,
+    reverse: true,
+  },
+  {
+    id: "redox",
+    title: "Баланс NAD+/NADH",
+    summary: "Соотношение NAD+ и NADH связано с окислительно-восстановительными процессами клетки.",
+    angle: 36,
+    ring: 1.02,
+    duration: 46,
+    delay: -15,
+    reverse: false,
+  },
+  {
+    id: "mitochondria",
+    title: "Митохондриальный статус",
+    summary: "NADH рассматривают как важный компонент оценки клеточного энергостатуса.",
+    angle: 94,
+    ring: 0.93,
+    duration: 41,
+    delay: -7,
+    reverse: true,
+  },
+  {
+    id: "recovery",
+    title: "Восстановление",
+    summary: "Энергетические механизмы с участием NADH связывают с переносимостью нагрузки и восстановлением.",
+    angle: 154,
+    ring: 1.08,
+    duration: 44,
+    delay: -19,
+    reverse: false,
+  },
+  {
+    id: "monitoring",
+    title: "Динамика до/после",
+    summary: "В протоколах важно отслеживать изменения в динамике и переносимость процедур.",
+    angle: 214,
+    ring: 1.04,
+    duration: 40,
+    delay: -9,
+    reverse: true,
+  },
+  {
+    id: "protocol",
+    title: "Протокольный подход",
+    summary: "NADH рассматривается в связке с форматами водородной терапии и индивидуальной маршрутизацией.",
+    angle: 274,
+    ring: 0.95,
+    duration: 42,
+    delay: -13,
+    reverse: false,
+  },
+];
 
 const mulberry32 = (seed: number) => {
   let t = seed >>> 0;
@@ -45,6 +130,7 @@ export const NadhRouter = ({ wide = false, disableReveal = false }: NadhRouterPr
   const sizeRef = useRef({ width: 0, height: 0 });
   const bubbleOffsetRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const rafRef = useRef<number | null>(null);
+  const [activeFactId, setActiveFactId] = useState<string | null>(NADH_FACTS[0]?.id ?? null);
 
   const bubbles = useMemo<Bubble[]>(() => {
     const count = isMobile ? 20 : 28;
@@ -64,12 +150,40 @@ export const NadhRouter = ({ wide = false, disableReveal = false }: NadhRouterPr
     }));
   }, [isMobile]);
 
+  const facts = useMemo(() => {
+    if (isMobile) return NADH_FACTS.slice(0, 6);
+    return NADH_FACTS;
+  }, [isMobile]);
+
+  const activeFact = useMemo(
+    () => facts.find((item) => item.id === activeFactId) ?? facts[0] ?? null,
+    [activeFactId, facts],
+  );
+
+  const factBaseRadius = useMemo(() => {
+    const width = orbitSize.width || 640;
+    const height = orbitSize.height || 520;
+    const minSide = Math.min(width, height);
+    const maxSide = Math.max(width, height);
+    const ratio = isMobile ? 0.3 : 0.35;
+    const fallback = isMobile ? 138 : 186;
+    return Math.max(fallback, Math.min(maxSide * 0.34, minSide * (1 + ratio)));
+  }, [isMobile, orbitSize.height, orbitSize.width]);
+
   useEffect(() => {
     const updateMobile = () => setIsMobile(window.innerWidth < 768);
     updateMobile();
     window.addEventListener("resize", updateMobile);
     return () => window.removeEventListener("resize", updateMobile);
   }, []);
+
+  useEffect(() => {
+    if (!facts.length) {
+      setActiveFactId(null);
+      return;
+    }
+    setActiveFactId((prev) => (prev && facts.some((item) => item.id === prev) ? prev : facts[0].id));
+  }, [facts]);
 
   useEffect(() => {
     sizeRef.current = orbitSize;
@@ -273,8 +387,62 @@ export const NadhRouter = ({ wide = false, disableReveal = false }: NadhRouterPr
               </div>
             )}
 
-            <div className="pointer-events-none absolute inset-0">
-              {/* bubble layer is above */}
+            <div className={clsx(styles.factsLayer, reduceMotion && styles.noMotion)}>
+              <div className={styles.factHint} aria-hidden>
+                Нажмите на факт
+              </div>
+              {facts.map((fact) => {
+                const motionStyle = {
+                  "--fact-duration": `${fact.duration}s`,
+                  "--fact-delay": `${fact.delay}s`,
+                } as CSSProperties;
+                const radius = Math.round(factBaseRadius * fact.ring);
+                const isActive = activeFact?.id === fact.id;
+                return (
+                  <div
+                    key={fact.id}
+                    className={fact.reverse ? styles.factOrbitReverse : styles.factOrbit}
+                    style={motionStyle}
+                  >
+                    <div
+                      className={styles.factAnchor}
+                      style={{ transform: `translate(-50%, -50%) rotate(${fact.angle}deg) translateX(${radius}px)` }}
+                    >
+                      <div className={styles.factCounterBase} style={{ transform: `rotate(${-fact.angle}deg)` }}>
+                        <div className={fact.reverse ? styles.factCounterReverse : styles.factCounterForward} style={motionStyle}>
+                          <button
+                            type="button"
+                            className={clsx(styles.factButton, isActive && styles.factButtonActive)}
+                            style={{ animationDelay: `${Math.abs(fact.delay)}s` }}
+                            onClick={() => setActiveFactId((current) => (current === fact.id ? null : fact.id))}
+                            aria-expanded={isActive}
+                            aria-controls={`nadh-fact-${fact.id}`}
+                          >
+                            <span className={styles.factDot} aria-hidden />
+                            <span className={styles.factLabel}>{fact.title}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {activeFact && (
+                <div id={`nadh-fact-${activeFact.id}`} className={styles.factDetails}>
+                  <div className={styles.factDetailsHead}>
+                    <h4 className={styles.factDetailsTitle}>{activeFact.title}</h4>
+                    <button
+                      type="button"
+                      className={styles.factClose}
+                      onClick={() => setActiveFactId(null)}
+                      aria-label="Скрыть факт"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <p className={styles.factDetailsBody}>{activeFact.summary}</p>
+                </div>
+              )}
             </div>
 
             <div className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center">

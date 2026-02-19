@@ -18,7 +18,6 @@ import { motion, useReducedMotion } from "framer-motion";
 import { NAV_ITEMS } from "@/config/nav";
 import { GooeyNav } from "@/components/nav/GooeyNav";
 import { useNavMorph } from "@/components/transitions/NavMorphProvider";
-import { SplashCursor } from "@/components/ui/SplashCursor";
 import { usePerformanceMode } from "@/hooks/usePerformanceMode";
 import styles from "./CinematicHero.module.css";
 
@@ -28,18 +27,21 @@ const TITLE = `${TITLE_TOP} ${TITLE_BOTTOM}`;
 const NAV_NADH_KEY = "nadh";
 const NAV_CABINETS_KEY = "cabinets";
 const ENABLE_NAV_MAGNET = true;
-const SPLASH_DURATION = 2800;
-const SPLASH_FORCE = 7200;
-const PARALLAX_X = 34;
-const PARALLAX_Y = 28;
-const STAR_PARALLAX = 2.1;
+const HOME_BOOT_STORAGE_KEY = "h2-home-boot-seen-v4";
+const HOME_BOOT_STABILIZE_MIN_MS = 760;
+const HOME_BOOT_STABILIZE_MAX_MS = 2200;
+const HOME_BOOT_INTRO_MS = 1560;
+const PARALLAX_X = 58;
+const PARALLAX_Y = 46;
+const STAR_PARALLAX = 2.9;
 const STAR_BLUR = 14;
 const VIDEO_SOURCES = [
   "/video/1 VID 4K.mp4",
   "/video/2 VID 4K.mp4",
 ];
-const VIDEO_SWAP_EARLY_SECONDS = 0.25;
-const VIDEO_WARMUP_SECONDS = 2.4;
+const VIDEO_SWAP_EARLY_SECONDS = 1.08;
+const VIDEO_WARMUP_SECONDS = 3.4;
+const VIDEO_CROSSFADE_MS = 820;
 const SIDE_GOOEY_PARTICLE_COUNT = 12;
 const SIDE_GOOEY_PARTICLE_DISTANCES: [number, number] = [90, 8];
 const SIDE_GOOEY_PARTICLE_R = 90;
@@ -207,7 +209,10 @@ const CinematicHeroComponent = () => {
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
   const playRetryRef = useRef<number | null>(null);
   const swapScheduleRef = useRef<number | null>(null);
+  const warmScheduleRef = useRef<number | null>(null);
   const frameRequestRef = useRef<{ id: number; video: HTMLVideoElement } | null>(null);
+  const swapFallbackRef = useRef<number | null>(null);
+  const prevPauseTimeoutRef = useRef<number | null>(null);
   const sideGooeyRefs = useRef<{ left: HTMLSpanElement | null; right: HTMLSpanElement | null }>({
     left: null,
     right: null,
@@ -215,34 +220,29 @@ const CinematicHeroComponent = () => {
   const sideGooeyTimeouts = useRef<{ left: number[]; right: number[] }>({ left: [], right: [] });
   const sideGooeyHideTimeouts = useRef<{ left?: number; right?: number }>({});
   const sideGooeyLastBurstRef = useRef(0);
+  const bootWarmRef = useRef(false);
   const [activeSlot, setActiveSlot] = useState(0);
-  const [videoIndex, setVideoIndex] = useState(0);
-  const [slotSources, setSlotSources] = useState(() => [
-    VIDEO_SOURCES[0],
-    VIDEO_SOURCES[1] ?? VIDEO_SOURCES[0],
-  ]);
-  const preloadTimeoutRef = useRef<number | null>(null);
   const swapLockRef = useRef(false);
-  const pendingSwapRef = useRef<{ slot: number; index: number; prevSlot: number } | null>(null);
+  const pendingSwapRef = useRef<{ slot: number; prevSlot: number } | null>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [videoState, setVideoState] = useState<"enter" | "ready" | "exit">("enter");
   const prevLowPerfRef = useRef(lowPerf);
   const starRefs = useRef<Map<string, HTMLSpanElement | null>>(new Map());
   const starOffsetsRef = useRef<Map<string, { x: number; y: number; blur: number }>>(new Map());
   const starPointerRef = useRef({ x: 0.5, y: 0.25 });
+  const bootSequenceRef = useRef(false);
+  const bootStartedAtRef = useRef(0);
   const navMap = useMemo(() => new Map(NAV_ITEMS.map((item) => [item.key, item])), []);
   const nadhHref = navMap.get(NAV_NADH_KEY)?.href ?? "/nadh";
   const cabinetsHref = navMap.get(NAV_CABINETS_KEY)?.href ?? "/application";
-  const [introReady, setIntroReady] = useState(() => reduceMotion || lowPerf);
-  const [splashDone, setSplashDone] = useState(() => reduceMotion || lowPerf);
+  const [bootPhase, setBootPhase] = useState<"stabilize" | "intro" | "ready">(() =>
+    reduceMotion || lowPerf ? "ready" : "stabilize",
+  );
   const starField = useMemo(() => (lowPerf ? BASE_STARFIELD : STARFIELD), [lowPerf]);
-  const splashColor = useMemo(() => ({ r: 0.6, g: 0.3, b: 1 }), []);
-  const handleSplashComplete = useCallback(() => {
-    setSplashDone(true);
-    setIntroReady(true);
-  }, []);
   const shouldAnimateIntro = !reduceMotion && !lowPerf;
-  const introState = shouldAnimateIntro ? (introReady ? "show" : "hidden") : "show";
+  const heroIntroReady = bootPhase === "ready";
+  const showBootOverlay = shouldAnimateIntro && bootPhase !== "ready";
+  const introState = shouldAnimateIntro ? (bootPhase === "ready" ? "show" : "hidden") : "show";
   const introInitial = shouldAnimateIntro ? "hidden" : "show";
   const introEase = [0.22, 1, 0.36, 1] as const;
   const introFade = {
@@ -267,12 +267,87 @@ const CinematicHeroComponent = () => {
     frameRequestRef.current = null;
   }, []);
 
-  useEffect(() => {
-    if (reduceMotion || lowPerf) {
-      setIntroReady(true);
-      setSplashDone(true);
+  const clearSwapFallback = useCallback(() => {
+    if (swapFallbackRef.current) {
+      window.clearTimeout(swapFallbackRef.current);
+      swapFallbackRef.current = null;
     }
-  }, [lowPerf, reduceMotion]);
+  }, []);
+
+  const clearPrevPause = useCallback(() => {
+    if (prevPauseTimeoutRef.current) {
+      window.clearTimeout(prevPauseTimeoutRef.current);
+      prevPauseTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion || lowPerf || !videoEnabled) {
+      bootSequenceRef.current = true;
+      setBootPhase("ready");
+      return;
+    }
+    if (bootSequenceRef.current) return;
+    bootSequenceRef.current = true;
+
+    let shouldRunBoot = true;
+    try {
+      const seen = window.sessionStorage.getItem(HOME_BOOT_STORAGE_KEY) === "1";
+      shouldRunBoot = !seen;
+      if (!seen) {
+        window.sessionStorage.setItem(HOME_BOOT_STORAGE_KEY, "1");
+      }
+    } catch {
+      shouldRunBoot = true;
+    }
+
+    if (!shouldRunBoot) {
+      setBootPhase("ready");
+      return;
+    }
+
+    bootStartedAtRef.current = performance.now();
+    setBootPhase("stabilize");
+  }, [lowPerf, reduceMotion, videoEnabled]);
+
+  useEffect(() => {
+    if (bootPhase !== "stabilize") return;
+    const startedAt = bootStartedAtRef.current || performance.now();
+    if (!bootStartedAtRef.current) {
+      bootStartedAtRef.current = startedAt;
+    }
+
+    const elapsed = performance.now() - startedAt;
+    const minDelay = Math.max(0, HOME_BOOT_STABILIZE_MIN_MS - elapsed);
+    const maxDelay = Math.max(0, HOME_BOOT_STABILIZE_MAX_MS - elapsed);
+
+    let minTimeout: number | undefined;
+    let cancelled = false;
+
+    const advance = () => {
+      if (cancelled) return;
+      setBootPhase((prev) => (prev === "stabilize" ? "intro" : prev));
+    };
+
+    const maxTimeout = window.setTimeout(advance, maxDelay);
+
+    if (videoReady) {
+      minTimeout = window.setTimeout(advance, minDelay);
+    }
+    return () => {
+      cancelled = true;
+      if (minTimeout) window.clearTimeout(minTimeout);
+      window.clearTimeout(maxTimeout);
+    };
+  }, [bootPhase, videoReady]);
+
+  useEffect(() => {
+    if (bootPhase !== "intro") return;
+    const timeout = window.setTimeout(() => {
+      setBootPhase("ready");
+    }, HOME_BOOT_INTRO_MS);
+    return () => window.clearTimeout(timeout);
+  }, [bootPhase]);
 
   useEffect(() => {
     return () => {
@@ -288,23 +363,6 @@ const CinematicHeroComponent = () => {
       });
     };
   }, []);
-
-  useEffect(() => {
-    if (!shouldAnimateIntro || introReady) return;
-    const timeout = window.setTimeout(() => {
-      setIntroReady(true);
-    }, 240);
-    return () => window.clearTimeout(timeout);
-  }, [introReady, shouldAnimateIntro]);
-
-  useEffect(() => {
-    if (!shouldAnimateIntro || splashDone) return;
-    const timeout = window.setTimeout(() => {
-      setSplashDone(true);
-      setIntroReady(true);
-    }, SPLASH_DURATION + 200);
-    return () => window.clearTimeout(timeout);
-  }, [shouldAnimateIntro, splashDone]);
 
   useEffect(() => {
     if (reduceMotion || lowPerf) {
@@ -392,65 +450,51 @@ const CinematicHeroComponent = () => {
     };
   }, [activeSlot, attemptPlay, lowPerf, reduceMotion, videoEnabled]);
 
-  useEffect(() => {
-    if (VIDEO_SOURCES.length < 2) return;
-    if (reduceMotion || lowPerf) return;
-    if (!videoReady) return;
-    if (preloadTimeoutRef.current) {
-      window.clearTimeout(preloadTimeoutRef.current);
+  const warmVideoSlot = useCallback((slot: number) => {
+    const video = videoRefs.current[slot];
+    if (!video) return;
+    video.preload = "auto";
+    video.muted = true;
+    video.playsInline = true;
+    if (video.readyState < 2) {
+      video.load();
     }
-    const nextIndex = (videoIndex + 1) % VIDEO_SOURCES.length;
-    const inactiveSlot = activeSlot === 0 ? 1 : 0;
-    preloadTimeoutRef.current = window.setTimeout(() => {
-      const primeVideo = (video: HTMLVideoElement) => {
-        if (video.readyState < 2) {
-          video.load();
-        }
-        if (video.currentTime > 0.06) {
-          try {
-            video.currentTime = 0;
-          } catch {
-            // ignore seek errors
-          }
-        }
-        const pauseAfterFrame = () => {
-          video.pause();
-        };
-        const anyVideo = video as HTMLVideoElement & {
-          requestVideoFrameCallback?: (callback: (now: number, metadata?: unknown) => void) => number;
-        };
-        const playPromise = video.play();
-        if (playPromise?.catch) {
-          playPromise.catch(() => undefined);
-        }
-        if (anyVideo.requestVideoFrameCallback) {
-          anyVideo.requestVideoFrameCallback(() => pauseAfterFrame());
-        } else {
-          window.setTimeout(pauseAfterFrame, 120);
-        }
-      };
-      setSlotSources((prev) => {
-        if (prev[inactiveSlot] === VIDEO_SOURCES[nextIndex]) return prev;
-        const next = [...prev];
-        next[inactiveSlot] = VIDEO_SOURCES[nextIndex];
-        return next;
-      });
-      const nextVideo = videoRefs.current[inactiveSlot];
-      if (nextVideo) {
-        nextVideo.preload = "auto";
-        nextVideo.load();
-        nextVideo.muted = true;
-        nextVideo.playsInline = true;
-        primeVideo(nextVideo);
+    if (video.currentTime > 0.06) {
+      try {
+        video.currentTime = 0;
+      } catch {
+        // ignore seek errors
       }
-    }, 0);
-    return () => {
-      if (preloadTimeoutRef.current) {
-        window.clearTimeout(preloadTimeoutRef.current);
-        preloadTimeoutRef.current = null;
-      }
+    }
+
+    const pauseAfterFrame = () => {
+      video.pause();
     };
-  }, [activeSlot, lowPerf, reduceMotion, videoIndex, videoReady]);
+    const anyVideo = video as HTMLVideoElement & {
+      requestVideoFrameCallback?: (callback: (now: number, metadata?: unknown) => void) => number;
+    };
+    const warmPromise = video.play();
+    if (warmPromise?.catch) {
+      warmPromise.catch(() => undefined);
+    }
+    if (anyVideo.requestVideoFrameCallback) {
+      anyVideo.requestVideoFrameCallback(() => pauseAfterFrame());
+    } else {
+      window.setTimeout(pauseAfterFrame, 120);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion || lowPerf || !videoEnabled) return;
+    if (VIDEO_SOURCES.length < 2) return;
+    if (bootWarmRef.current) return;
+
+    const timeout = window.setTimeout(() => {
+      warmVideoSlot(1);
+      bootWarmRef.current = true;
+    }, 120);
+    return () => window.clearTimeout(timeout);
+  }, [lowPerf, reduceMotion, videoEnabled, warmVideoSlot]);
 
   useEffect(() => {
     if (reduceMotion || lowPerf) {
@@ -479,8 +523,8 @@ const CinematicHeroComponent = () => {
     const lerp = (from: number, to: number, t: number) => from + (to - from) * t;
 
     const tick = () => {
-      currentX = lerp(currentX, targetX, 0.08);
-      currentY = lerp(currentY, targetY, 0.08);
+      currentX = lerp(currentX, targetX, 0.11);
+      currentY = lerp(currentY, targetY, 0.11);
       root.style.setProperty("--mx", `${currentX.toFixed(2)}px`);
       root.style.setProperty("--my", `${currentY.toFixed(2)}px`);
       if (Math.abs(currentX - targetX) > 0.1 || Math.abs(currentY - targetY) > 0.1) {
@@ -565,16 +609,30 @@ const CinematicHeroComponent = () => {
       window.clearTimeout(swapScheduleRef.current);
       swapScheduleRef.current = null;
     }
+    if (warmScheduleRef.current) {
+      window.clearTimeout(warmScheduleRef.current);
+      warmScheduleRef.current = null;
+    }
+    clearSwapFallback();
+    clearPrevPause();
     cancelFrameRequest();
     const prevVideo = videoRefs.current[pending.prevSlot];
     if (prevVideo) {
-      prevVideo.pause();
+      prevPauseTimeoutRef.current = window.setTimeout(() => {
+        prevVideo.pause();
+        prevPauseTimeoutRef.current = null;
+      }, VIDEO_CROSSFADE_MS);
     }
     setActiveSlot(pending.slot);
-    setVideoIndex(pending.index);
     setVideoReady(true);
     pendingSwapRef.current = null;
-  }, [cancelFrameRequest]);
+  }, [cancelFrameRequest, clearPrevPause, clearSwapFallback]);
+
+  const releaseSwapLock = useCallback(() => {
+    window.setTimeout(() => {
+      swapLockRef.current = false;
+    }, VIDEO_CROSSFADE_MS);
+  }, []);
 
   const requestSwap = useCallback(() => {
     if (swapLockRef.current || pendingSwapRef.current) return;
@@ -583,11 +641,16 @@ const CinematicHeroComponent = () => {
       window.clearTimeout(swapScheduleRef.current);
       swapScheduleRef.current = null;
     }
+    if (warmScheduleRef.current) {
+      window.clearTimeout(warmScheduleRef.current);
+      warmScheduleRef.current = null;
+    }
+    clearSwapFallback();
+    cancelFrameRequest();
     swapLockRef.current = true;
-    const nextIndex = (videoIndex + 1) % VIDEO_SOURCES.length;
     const nextSlot = activeSlot === 0 ? 1 : 0;
     const nextVideo = videoRefs.current[nextSlot];
-    pendingSwapRef.current = { slot: nextSlot, index: nextIndex, prevSlot: activeSlot };
+    pendingSwapRef.current = { slot: nextSlot, prevSlot: activeSlot };
 
     const finalizeOnFrame = (video: HTMLVideoElement) => {
       const anyVideo = video as HTMLVideoElement & {
@@ -605,43 +668,86 @@ const CinematicHeroComponent = () => {
       finalizeSwap();
     };
 
-    if (nextVideo) {
-      const playPromise = nextVideo.play();
-      if (playPromise?.catch) {
-        playPromise.catch(() => undefined);
-      }
-      if (nextVideo.readyState >= 3) {
-        finalizeOnFrame(nextVideo);
-      } else {
-        nextVideo.addEventListener(
-          "canplay",
-          () => {
-            if (nextVideo.readyState >= 3) {
-              finalizeOnFrame(nextVideo);
-            }
-          },
-          { once: true },
-        );
-      }
+    if (!nextVideo) {
+      pendingSwapRef.current = null;
+      swapLockRef.current = false;
+      return;
     }
 
-    window.setTimeout(() => {
-      swapLockRef.current = false;
-    }, 160);
-  }, [activeSlot, finalizeSwap, videoIndex]);
+    nextVideo.preload = "auto";
+    nextVideo.muted = true;
+    nextVideo.playsInline = true;
+    if (nextVideo.readyState < 2) {
+      nextVideo.load();
+    }
+    if (nextVideo.currentTime > 0.06) {
+      try {
+        nextVideo.currentTime = 0;
+      } catch {
+        // ignore seek errors
+      }
+    }
+    const playPromise = nextVideo.play();
+    if (playPromise?.catch) {
+      playPromise.catch(() => undefined);
+    }
+    if (nextVideo.readyState >= 3) {
+      finalizeOnFrame(nextVideo);
+    } else {
+      nextVideo.addEventListener(
+        "canplay",
+        () => {
+          const pending = pendingSwapRef.current;
+          if (!pending || pending.slot !== nextSlot) return;
+          if (nextVideo.readyState >= 3) {
+            finalizeOnFrame(nextVideo);
+          }
+        },
+        { once: true },
+      );
+    }
 
-  const scheduleSwap = (video: HTMLVideoElement) => {
+    swapFallbackRef.current = window.setTimeout(() => {
+      const pending = pendingSwapRef.current;
+      if (!pending || pending.slot !== nextSlot) return;
+      finalizeSwap();
+    }, 900);
+
+    releaseSwapLock();
+  }, [activeSlot, cancelFrameRequest, clearSwapFallback, finalizeSwap, releaseSwapLock]);
+
+  const scheduleSwap = useCallback((video: HTMLVideoElement) => {
     if (VIDEO_SOURCES.length < 2) return;
     if (!Number.isFinite(video.duration) || video.duration <= 0) return;
     if (swapScheduleRef.current) {
       window.clearTimeout(swapScheduleRef.current);
     }
+    if (warmScheduleRef.current) {
+      window.clearTimeout(warmScheduleRef.current);
+      warmScheduleRef.current = null;
+    }
+    const nextSlot = activeSlot === 0 ? 1 : 0;
+    const warmDelayMs = Math.max(0, (video.duration - VIDEO_WARMUP_SECONDS) * 1000);
+    warmScheduleRef.current = window.setTimeout(() => {
+      warmVideoSlot(nextSlot);
+      warmScheduleRef.current = null;
+    }, warmDelayMs);
     const delayMs = Math.max(0, (video.duration - VIDEO_SWAP_EARLY_SECONDS) * 1000);
     swapScheduleRef.current = window.setTimeout(() => {
       swapScheduleRef.current = null;
       requestSwap();
     }, delayMs);
-  };
+  }, [activeSlot, requestSwap, warmVideoSlot]);
+
+  useEffect(() => {
+    if (reduceMotion || lowPerf) return;
+    if (VIDEO_SOURCES.length < 2) return;
+    const active = videoRefs.current[activeSlot];
+    if (!active) return;
+    if (Number.isFinite(active.duration) && active.duration > 0) {
+      scheduleSwap(active);
+    }
+  }, [activeSlot, lowPerf, reduceMotion, scheduleSwap]);
 
   useEffect(() => {
     return () => {
@@ -649,70 +755,15 @@ const CinematicHeroComponent = () => {
         window.clearTimeout(swapScheduleRef.current);
         swapScheduleRef.current = null;
       }
+      if (warmScheduleRef.current) {
+        window.clearTimeout(warmScheduleRef.current);
+        warmScheduleRef.current = null;
+      }
+      clearSwapFallback();
+      clearPrevPause();
       cancelFrameRequest();
     };
-  }, [cancelFrameRequest]);
-
-  useEffect(() => {
-    if (reduceMotion || lowPerf) return;
-    if (VIDEO_SOURCES.length < 2) return;
-    const active = videoRefs.current[activeSlot];
-    if (!active) return;
-    const nextSlot = activeSlot === 0 ? 1 : 0;
-    const nextIndex = (videoIndex + 1) % VIDEO_SOURCES.length;
-    let warmedIndex = -1;
-    let raf = 0;
-    const tick = () => {
-      if (!active || active.paused) {
-        raf = requestAnimationFrame(tick);
-        return;
-      }
-      if (!Number.isFinite(active.duration) || active.duration <= 0) {
-        raf = requestAnimationFrame(tick);
-        return;
-      }
-      const remaining = active.duration - active.currentTime;
-      if (remaining <= VIDEO_WARMUP_SECONDS && warmedIndex !== nextIndex) {
-        const nextVideo = videoRefs.current[nextSlot];
-        if (nextVideo && nextVideo.readyState < 3) {
-          nextVideo.muted = true;
-          nextVideo.playsInline = true;
-          if (nextVideo.currentTime > 0.06) {
-            try {
-              nextVideo.currentTime = 0;
-            } catch {
-              // ignore seek errors
-            }
-          }
-          const pauseAfterFrame = () => {
-            nextVideo.pause();
-          };
-          const anyVideo = nextVideo as HTMLVideoElement & {
-            requestVideoFrameCallback?: (callback: (now: number, metadata?: unknown) => void) => number;
-          };
-          const warmPromise = nextVideo.play();
-          if (warmPromise?.catch) {
-            warmPromise.catch(() => undefined);
-          }
-          if (anyVideo.requestVideoFrameCallback) {
-            anyVideo.requestVideoFrameCallback(() => pauseAfterFrame());
-          } else {
-            window.setTimeout(pauseAfterFrame, 120);
-          }
-        }
-        warmedIndex = nextIndex;
-      }
-      if (remaining <= VIDEO_SWAP_EARLY_SECONDS) {
-        requestSwap();
-        return;
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => {
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [activeSlot, lowPerf, reduceMotion, requestSwap]);
+  }, [cancelFrameRequest, clearPrevPause, clearSwapFallback]);
 
   useEffect(() => {
     const root = heroRef.current;
@@ -1066,7 +1117,9 @@ const CinematicHeroComponent = () => {
     <section
       ref={heroRef}
       data-hero-root
-      data-hero-intro={introReady ? "true" : "false"}
+      data-hero-intro={heroIntroReady ? "true" : "false"}
+      data-boot-phase={bootPhase}
+      data-video-ready={videoReady ? "true" : "false"}
       data-video-state={videoState}
       data-nav-morph={isMorphing ? "true" : "false"}
       className={styles.heroRoot}
@@ -1084,6 +1137,7 @@ const CinematicHeroComponent = () => {
                 }}
                 className={styles.heroVideo}
                 data-active={isActive ? "true" : "false"}
+                style={{ zIndex: isActive ? 2 : 1 }}
                 autoPlay={isActive}
                 muted
                 playsInline
@@ -1091,9 +1145,17 @@ const CinematicHeroComponent = () => {
                 disablePictureInPicture
                 controls={false}
                 loop={VIDEO_SOURCES.length < 2}
-                src={slotSources[slot]}
+                src={VIDEO_SOURCES[slot]}
                 onCanPlay={() => {
                   if (slot === activeSlot) setVideoReady(true);
+                }}
+                onLoadedData={(event) => {
+                  if (slot !== activeSlot) return;
+                  setVideoReady(true);
+                  const playPromise = event.currentTarget.play();
+                  if (playPromise?.catch) {
+                    playPromise.catch(() => undefined);
+                  }
                 }}
                 onLoadedMetadata={(event) => {
                   if (slot !== activeSlot) return;
@@ -1102,20 +1164,6 @@ const CinematicHeroComponent = () => {
                 onEnded={() => {
                   if (slot !== activeSlot) return;
                   requestSwap();
-                }}
-                onTimeUpdate={(event) => {
-                  if (slot !== activeSlot) return;
-                  if (VIDEO_SOURCES.length < 2) return;
-                  const video = event.currentTarget;
-                  if (!Number.isFinite(video.duration) || video.duration <= 0) return;
-                  if (video.duration - video.currentTime <= VIDEO_SWAP_EARLY_SECONDS) {
-                    requestSwap();
-                  }
-                }}
-                onPlaying={() => {
-                  const pending = pendingSwapRef.current;
-                  if (!pending || pending.slot !== slot) return;
-                  finalizeSwap();
                 }}
               />
             );
@@ -1156,20 +1204,23 @@ const CinematicHeroComponent = () => {
 
       {!lowPerf && <div className={styles.heroBreath} aria-hidden />}
 
-      <div className={styles.uiLayer}>
-        {shouldAnimateIntro && !splashDone && (
-            <SplashCursor
-              active={!splashDone}
-              SPLAT_RADIUS={0.24}
-              SPLAT_FORCE={SPLASH_FORCE}
-              BACK_COLOR={splashColor}
-              COLOR_UPDATE_SPEED={14}
-            DURATION={SPLASH_DURATION}
-            TRANSPARENT
-            onComplete={handleSplashComplete}
-          />
-        )}
+      {showBootOverlay && (
+        <div className={styles.bootOverlay} data-phase={bootPhase} aria-hidden>
+          <div className={styles.bootStabilizeLayer}>
+            <span className={styles.bootCore} />
+            <span className={styles.bootRing} />
+            <span className={styles.bootRingOuter} />
+            <span className={styles.bootLabel}>HYDROGENIUM</span>
+          </div>
+          <div className={styles.introOverlay} data-intro={bootPhase === "intro" ? "true" : "false"}>
+            <span className={styles.introShade} />
+            <span className={styles.introBubble} />
+            <span className={styles.introRipple} />
+          </div>
+        </div>
+      )}
 
+      <div className={styles.uiLayer}>
         <motion.div
           className={styles.introStage}
           variants={introDrop}

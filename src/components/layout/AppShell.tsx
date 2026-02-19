@@ -13,7 +13,6 @@ import { AmbientGrid } from "@/components/ui/ambient-grid";
 import { ScanSweep } from "@/components/ui/scan-sweep";
 import { ColorBends } from "@/components/ui/color-bends";
 import { SoundProvider } from "@/components/ui/ui-sound";
-import { PerformanceToggle } from "@/components/ui/performance-toggle";
 import { usePerformanceMode } from "@/hooks/usePerformanceMode";
 
 type AppShellProps = {
@@ -44,6 +43,12 @@ export const AppShell = ({ children }: AppShellProps) => {
     window.addEventListener("resize", measureScrollbar);
     return () => window.removeEventListener("resize", measureScrollbar);
   }, []);
+
+  useEffect(() => {
+    const body = document.body;
+    body.classList.toggle("panel-mode", !isHome);
+    return () => body.classList.remove("panel-mode");
+  }, [isHome]);
 
   return (
     <LayoutGroup id="app-shell">
@@ -83,7 +88,6 @@ export const AppShell = ({ children }: AppShellProps) => {
               {isHome ? <HomeFullscreen>{children}</HomeFullscreen> : <MainShell>{children}</MainShell>}
             </PageTransition>
           </div>
-          <PerformanceToggle />
         </NavMorphProvider>
       </SoundProvider>
     </LayoutGroup>
