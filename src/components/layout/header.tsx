@@ -247,7 +247,7 @@ export const Header = ({ disableHeroMode = false }: HeaderProps) => {
                           onClick={() => setMenuOpen(false)}
                           data-ui-sound="nav"
                           className={clsx(
-                            "mobile-menu-link rounded-2xl border border-transparent bg-white/[0.03] px-3.5 py-2.5 text-sm font-semibold text-[color:var(--muted)] transition-all",
+                            "mobile-menu-link flex w-full items-center rounded-2xl border border-transparent bg-white/[0.03] px-3.5 py-2.5 text-sm font-semibold leading-tight text-[color:var(--muted)] transition-all",
                             "hover:border-white/20 hover:bg-white/[0.08] hover:text-white",
                             active && "mobile-menu-link-active border-[rgba(140,225,255,0.45)] bg-[rgba(100,185,255,0.18)] text-white shadow-[0_10px_28px_-16px_rgba(90,180,255,0.75)]",
                           )}
